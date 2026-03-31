@@ -1,0 +1,105 @@
+{
+  "project": "MAC-ADG System - 通用科研人员识别系统",
+  "version": "2.0.0",
+  
+  "input_data": {
+    "description": "用户需要上传的数据源",
+    "department_library": {
+      "source": "data/user_input/departments.csv",
+      "description": "部门库 CSV文件路径",
+      "columns": {
+        "dept_id": "部门编码（唯一标识，如 clinical_medicine）",
+        "dept_name_zh": "部门中文名称（如 西南医科大学 临床医学院）",
+        "dept_name_en": "部门英文名称（如 School of Clinical Medicine）",
+        "aliases": "别名列表（逗号分隔，如 Clinical School,SWMU Clinical,西医院校 临床）",
+        "keywords": "关键词（逗号分隔，用于快速匹配，如 clinical,medicine,school）"
+      }
+    },
+    "faculty_library": {
+      "source": "data/user_input/faculty.csv",
+      "description": "教职工库 CSV文件路径",
+      "columns": {
+        "employee_id": "工号（唯一标识）",
+        "name_zh": "姓名（必填）",
+        "dept_id": "所属部门ID（必填，应与departments.csv的dept_id对应）",
+        "name_en": "英文名（可选，如 Li Si）",
+        "email": "邮箱（可选，用于消歧）",
+        "position": "职位（可选，如 教授、讲师，用于消歧）",
+        "research_area": "研究方向（可选，如 诊断学，用于消歧）"
+      }
+    },
+    "doi_list": {
+      "source": "data/user_input/paper_dois.csv",
+      "description": "论文DOI列表",
+      "columns": {
+        "doi": "论文DOI（必填）"
+      }
+    }
+  },
+  
+  "matching_rules": {
+    "description": "匹配规则配置",
+    "unit_match_confidence_threshold": 0.7,
+    "unit_match_threshold_description": "单位匹配置信度阈值。低于此值的论文将被标记为'单位不确定'，不会触发Vision调用。(0-1, 建议0.6-0.8)",
+    
+    "equity_mark_confidence_threshold": 0.85,
+    "equity_mark_threshold_description": "权益标记置信度阈值。低于此值的权益标记将被导出为'待审核'而非自动确认。(0-1, 建议0.8-0.9)",
+    
+    "name_match_threshold": 0.7,
+    "name_match_threshold_description": "名字匹配相似度阈值。(0-1, 建议0.7)",
+    
+    "confidence_mode": "normal",
+    "confidence_mode_description": "置信度模式。strict=严格(>0.9) normal=折中(>0.75) lenient=宽松(>0.5)"
+  },
+  
+  "processing_options": {
+    "description": "处理选项",
+    "enable_vision_agent": true,
+    "enable_vision_agent_description": "是否启用Vision Agent来识别权益标记。建议true（使用Vision来补充非结构化的权益信息）",
+    
+    "export_uncertain_for_review": true,
+    "export_uncertain_description": "是否导出中等置信度的结果供人工审核。建议true（保证准确性）",
+    
+    "review_export_path": "output/review_needed.csv",
+    "review_export_description": "需要审核的结果导出路径"
+  },
+  
+  "output_format": {
+    "description": "输出文件配置",
+    "confirmed_matches": {
+      "path": "output/confirmed_matches.json",
+      "description": "高置信度的匹配结果（自动确认，可直接使用）"
+    },
+    "review_needed": {
+      "path": "output/review_needed.csv",
+      "description": "需要人工审核的结果（多个候选、中等置信度等）"
+    },
+    "summary_report": {
+      "path": "output/summary_report.json",
+      "description": "处理总结：成功/失败/待审核数量，性能指标等"
+    }
+  },
+  
+  "performance": {
+    "description": "性能指标配置",
+    "batch_size": 100,
+    "batch_size_description": "批处理大小（每批处理多少篇论文）",
+    
+    "vision_call_timeout": 30,
+    "vision_call_timeout_description": "Vision Agent调用超时时间（秒）",
+    
+    "scout_call_timeout": 10,
+    "scout_call_timeout_description": "Scout Agent调用超时时间（秒）"
+  },
+  
+  "example_workflow": {
+    "step1": "用户上传 departments.csv（本校部门库）",
+    "step2": "用户上传 faculty.csv（教职工名单）",
+    "step3": "用户上传 paper_dois.csv（论文DOI列表）",
+    "step4": "系统运行Scout Agent获取Crossref元数据",
+    "step5": "系统进行单位匹配（根据unit_match_confidence_threshold决策是否调用Vision）",
+    "step6": "（如需）调用Vision Agent识别权益标记",
+    "step7": "系统进行名字匹配（在确定的部门内查找教师）",
+    "step8": "输出结果：confirmed_matches（自动确认）+ review_needed（待审核）"
+  }
+}

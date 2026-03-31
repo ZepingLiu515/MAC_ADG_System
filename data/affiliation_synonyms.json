@@ -1,0 +1,12 @@
+{
+  "西部医学院": ["West China School of Medicine", "West China Hospital", "WCSHM"],
+  "计算机学院": ["School of Computer Science", "College of Computer Science", "CS", "Department of Computer Science"],
+  "电气学院": ["School of Electrical Engineering", "College of Electrical Engineering", "EE"],
+  "机械学院": ["School of Mechanical Engineering", "College of Mechanical Engineering"],
+  "土木工程学院": ["School of Civil Engineering", "College of Civil Engineering"],
+  "四川大学": ["Sichuan University", "SCU"],
+  "通讯作者": ["Corresponding Author", "Corresponding"],
+  "共同一作": ["Co-first Author", "Co-first", "Equal Contribution"],
+  "吴笛": ["Di Wu", "Wu Di"],
+  "刘泽萍": ["Zeping Liu", "Z.P. Liu", "Liu Zeping", "Liu Z."]
+}
