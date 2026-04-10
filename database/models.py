@@ -83,6 +83,35 @@ class PaperAuthor(Base):
     paper = relationship("Paper", back_populates="authors")
     matched_faculty = relationship("Faculty", back_populates="matched_records")
 
+
+class CorrectionMemory(Base):
+    """
+    [Table: Correction Memory]
+    Minimal RAG-style memory for storing manual correction samples.
+    """
+    __tablename__ = 'correction_memory'
+
+    id = Column(Integer, primary_key=True)
+    doi = Column(String, nullable=True, comment="Related DOI (optional)")
+    layout_fingerprint = Column(JSON, comment="Token list or layout fingerprint")
+    error_type = Column(String, comment="Error category")
+    correction = Column(JSON, comment="Correction payload (structured)")
+    source = Column(String, comment="Source of correction (manual/import)")
+    notes = Column(Text, comment="Free-form notes")
+    created_at = Column(DateTime, default=datetime.now)
+
+
+class SystemSetting(Base):
+    """[Table: System Settings]
+    Stores global configuration values (key/value).
+    """
+
+    __tablename__ = 'system_settings'
+
+    key = Column(String, primary_key=True)
+    value = Column(String, nullable=False)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
 # 3. Database Initialization Logic
 
 def init_db(db_name="mac_adg.db"):

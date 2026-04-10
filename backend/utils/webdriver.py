@@ -13,10 +13,12 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import re
 import unicodedata
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional
 
 try:
@@ -24,6 +26,11 @@ try:
 except (ImportError, Exception) as e:
     print(f"[WARNING] Playwright import failed: {e}")
     sync_playwright = None
+
+try:
+    from playwright.async_api import async_playwright
+except (ImportError, Exception):
+    async_playwright = None
 
 try:
     from playwright_stealth import stealth_sync
@@ -42,6 +49,72 @@ class WebDriverAdapter:
         self.playwright = None
         self.browser = None
 
+    def _ensure_windows_event_loop_policy(self) -> None:
+        """Ensure Windows event loop policy supports subprocesses (Playwright requirement)."""
+        if os.name != "nt":
+            return
+        try:
+            policy = asyncio.get_event_loop_policy()
+            if hasattr(asyncio, "WindowsProactorEventLoopPolicy"):
+                if not isinstance(policy, asyncio.WindowsProactorEventLoopPolicy):
+                    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+        except Exception:
+            pass
+
+    def _get_proxy(self) -> Optional[Dict[str, str]]:
+        proxy_server = os.getenv("PLAYWRIGHT_PROXY")
+        proxy_user = os.getenv("PLAYWRIGHT_PROXY_USERNAME")
+        proxy_pass = os.getenv("PLAYWRIGHT_PROXY_PASSWORD")
+        if not proxy_server:
+            return None
+        proxy: Dict[str, str] = {"server": proxy_server}
+        if proxy_user and proxy_pass:
+            proxy["username"] = proxy_user
+            proxy["password"] = proxy_pass
+        return proxy
+
+    def _get_headless(self) -> bool:
+        headless_env = os.getenv("PLAYWRIGHT_HEADLESS", "1").strip()
+        return not (headless_env in {"0", "false", "False", "no", "NO"})
+
+    def _get_slow_mo(self) -> int:
+        try:
+            return int(os.getenv("PLAYWRIGHT_SLOWMO_MS", "0").strip() or "0")
+        except Exception:
+            return 0
+
+    def _get_launch_options(self) -> Dict[str, Any]:
+        opts: Dict[str, Any] = {
+            "headless": self._get_headless(),
+            "slow_mo": self._get_slow_mo(),
+            "args": ["--disable-blink-features=AutomationControlled"],
+        }
+        channel = os.getenv("PLAYWRIGHT_CHANNEL")
+        if channel:
+            opts["channel"] = channel
+        proxy = self._get_proxy()
+        if proxy:
+            opts["proxy"] = proxy
+        return opts
+
+    def _get_context_options(self) -> Dict[str, Any]:
+        return {
+            "viewport": {"width": 1920, "height": 1080},
+            "user_agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/121.0.0.0 Safari/537.36"
+            ),
+            "extra_http_headers": {
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
+                "Cache-Control": "max-age=0",
+                "DNT": "1",
+            },
+            "locale": "en-US",
+        }
+
     def _goto_timeout_ms(self, default: int = 90000) -> int:
         """可配置的 goto 超时（毫秒）。AIMS 等站点偶尔首屏很慢，45s 不够。"""
         raw = os.getenv("PLAYWRIGHT_GOTO_TIMEOUT_MS")
@@ -52,6 +125,65 @@ class WebDriverAdapter:
             return v if v > 0 else int(default)
         except Exception:
             return int(default)
+
+    def _run_async(self, coro):
+        """Run async Playwright safely, even if an event loop is already running."""
+        self._ensure_windows_event_loop_policy()
+        try:
+            return asyncio.run(coro)
+        except RuntimeError as exc:
+            if "asyncio.run() cannot be called" in str(exc):
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    return executor.submit(lambda: asyncio.run(coro)).result()
+            raise
+
+    async def _get_webpage_screenshot_async(
+        self,
+        doi_url: str,
+        landing_page_url: Optional[str],
+        save_path: str,
+        blocked_save_path: str,
+    ) -> Optional[str]:
+        """Async fallback for Playwright screenshot capture."""
+        if async_playwright is None:
+            return None
+
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(**self._get_launch_options())
+            context = await browser.new_context(**self._get_context_options())
+
+            page = await context.new_page()
+            goto_timeout = self._goto_timeout_ms(default=90000)
+            response = None
+            try:
+                response = await page.goto(doi_url, wait_until="domcontentloaded", timeout=goto_timeout)
+            except Exception:
+                if landing_page_url and isinstance(landing_page_url, str):
+                    landing_page_url = landing_page_url.strip()
+                if landing_page_url and landing_page_url != doi_url:
+                    response = await page.goto(
+                        landing_page_url,
+                        wait_until="domcontentloaded",
+                        timeout=goto_timeout,
+                    )
+                else:
+                    await browser.close()
+                    return None
+
+            if response and response.status >= 400:
+                try:
+                    await page.screenshot(path=blocked_save_path)
+                except Exception:
+                    pass
+                await browser.close()
+                return None
+
+            await page.wait_for_timeout(3000)
+            try:
+                await page.screenshot(path=save_path)
+            finally:
+                await browser.close()
+            return save_path
 
     def get_webpage_screenshot(self, doi: str, landing_page_url: Optional[str] = None) -> Optional[str]:
         """导航到 DOI 页面并获取截图。
@@ -70,59 +202,25 @@ class WebDriverAdapter:
             print("[WebDriver] ⚠️ Playwright 未安装")
             return None
 
+        self._ensure_windows_event_loop_policy()
+
         doi_url = f"https://doi.org/{doi}"
         safe_doi = doi.replace("/", "_")
         save_path = os.path.join(VISUAL_SLICE_DIR, f"{safe_doi}.png")
         blocked_save_path = os.path.join(VISUAL_SLICE_DIR, f"{safe_doi}_blocked.png")
 
+        def _use_cached_screenshot(reason: str) -> Optional[str]:
+            if os.path.exists(save_path):
+                print(f"[WebDriver] Using cached screenshot ({reason}): {save_path}")
+                return save_path
+            return None
+
         print(f"[WebDriver] 🌐 启动浏览器，访问: {doi_url}")
 
         try:
             with sync_playwright() as p:
-                channel = os.getenv("PLAYWRIGHT_CHANNEL")
-
-                proxy_server = os.getenv("PLAYWRIGHT_PROXY")
-                proxy_user = os.getenv("PLAYWRIGHT_PROXY_USERNAME")
-                proxy_pass = os.getenv("PLAYWRIGHT_PROXY_PASSWORD")
-                proxy = None
-                if proxy_server:
-                    proxy = {"server": proxy_server}
-                    if proxy_user and proxy_pass:
-                        proxy["username"] = proxy_user
-                        proxy["password"] = proxy_pass
-
-                headless_env = os.getenv("PLAYWRIGHT_HEADLESS", "1").strip()
-                headless = not (headless_env in {"0", "false", "False", "no", "NO"})
-
-                try:
-                    slow_mo = int(os.getenv("PLAYWRIGHT_SLOWMO_MS", "0").strip() or "0")
-                except Exception:
-                    slow_mo = 0
-
-                browser = p.chromium.launch(
-                    headless=headless,
-                    channel=channel,
-                    proxy=proxy,
-                    slow_mo=slow_mo,
-                    args=["--disable-blink-features=AutomationControlled"],
-                )
-
-                context = browser.new_context(
-                    viewport={"width": 1920, "height": 1080},
-                    user_agent=(
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                        "AppleWebKit/537.36 (KHTML, like Gecko) "
-                        "Chrome/121.0.0.0 Safari/537.36"
-                    ),
-                    extra_http_headers={
-                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
-                        "Accept-Encoding": "gzip, deflate, br",
-                        "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
-                        "Cache-Control": "max-age=0",
-                        "DNT": "1",
-                    },
-                    locale="en-US",
-                )
+                browser = p.chromium.launch(**self._get_launch_options())
+                context = browser.new_context(**self._get_context_options())
                 page = context.new_page()
                 stealth_sync(page)
 
@@ -143,7 +241,26 @@ class WebDriverAdapter:
 
                 print("[WebDriver] 正在导航...")
                 goto_timeout = self._goto_timeout_ms(default=90000)
-                response = page.goto(doi_url, wait_until="domcontentloaded", timeout=goto_timeout)
+                response = None
+                try:
+                    response = page.goto(doi_url, wait_until="domcontentloaded", timeout=goto_timeout)
+                except Exception as e:
+                    print(f"[WebDriver] doi.org navigation failed: {e}")
+                    if landing_page_url and isinstance(landing_page_url, str):
+                        landing_page_url = landing_page_url.strip()
+                    if landing_page_url and landing_page_url != doi_url:
+                        try:
+                            print(f"[WebDriver] Trying landing page: {landing_page_url}")
+                            response = page.goto(landing_page_url, wait_until="domcontentloaded", timeout=goto_timeout)
+                        except Exception as e2:
+                            print(f"[WebDriver] Landing page navigation failed: {e2}")
+                    if response is None:
+                        cached = _use_cached_screenshot("navigation failed")
+                        if cached:
+                            browser.close()
+                            return cached
+                        browser.close()
+                        return None
 
                 blocked = (response and response.status >= 400) or _is_block_page()
                 if blocked:
@@ -186,6 +303,10 @@ class WebDriverAdapter:
                                         print(f"[WebDriver] 🧾 已保存拦截页截图: {blocked_save_path}")
                                     except Exception:
                                         pass
+                                    cached = _use_cached_screenshot("blocked landing page")
+                                    if cached:
+                                        browser.close()
+                                        return cached
                                     browser.close()
                                     return None
                             except Exception as e:
@@ -195,6 +316,10 @@ class WebDriverAdapter:
                                     print(f"[WebDriver] 🧾 已保存拦截页截图: {blocked_save_path}")
                                 except Exception:
                                     pass
+                                cached = _use_cached_screenshot("landing page failed")
+                                if cached:
+                                    browser.close()
+                                    return cached
                                 browser.close()
                                 return None
                         else:
@@ -203,6 +328,10 @@ class WebDriverAdapter:
                                 print(f"[WebDriver] 🧾 已保存拦截页截图: {blocked_save_path}")
                             except Exception:
                                 pass
+                            cached = _use_cached_screenshot("blocked doi.org")
+                            if cached:
+                                browser.close()
+                                return cached
                             browser.close()
                             return None
 
@@ -216,6 +345,20 @@ class WebDriverAdapter:
                 browser.close()
                 return save_path
 
+        except NotImplementedError:
+            # Sync Playwright can fail under some event loop contexts; fallback to async API.
+            try:
+                return self._run_async(
+                    self._get_webpage_screenshot_async(
+                        doi_url,
+                        landing_page_url,
+                        save_path,
+                        blocked_save_path,
+                    )
+                )
+            except Exception as e:
+                print(f"[WebDriver] ❌ 异步截图失败: {e}")
+                return None
         except Exception as e:
             print(f"[WebDriver] ❌ 错误: {e}")
             return None
@@ -237,6 +380,8 @@ class WebDriverAdapter:
         if sync_playwright is None:
             print("[WebDriver] ⚠️ Playwright 未安装")
             return None
+
+        self._ensure_windows_event_loop_policy()
 
         def _env_truthy(name: str, default: str = "1") -> bool:
             raw = os.getenv(name, default).strip()
@@ -377,50 +522,8 @@ class WebDriverAdapter:
 
         try:
             with sync_playwright() as p:
-                channel = os.getenv("PLAYWRIGHT_CHANNEL")
-
-                proxy_server = os.getenv("PLAYWRIGHT_PROXY")
-                proxy_user = os.getenv("PLAYWRIGHT_PROXY_USERNAME")
-                proxy_pass = os.getenv("PLAYWRIGHT_PROXY_PASSWORD")
-                proxy = None
-                if proxy_server:
-                    proxy = {"server": proxy_server}
-                    if proxy_user and proxy_pass:
-                        proxy["username"] = proxy_user
-                        proxy["password"] = proxy_pass
-
-                headless_env = os.getenv("PLAYWRIGHT_HEADLESS", "1").strip()
-                headless = not (headless_env in {"0", "false", "False", "no", "NO"})
-
-                try:
-                    slow_mo = int(os.getenv("PLAYWRIGHT_SLOWMO_MS", "0").strip() or "0")
-                except Exception:
-                    slow_mo = 0
-
-                browser = p.chromium.launch(
-                    headless=headless,
-                    channel=channel,
-                    proxy=proxy,
-                    slow_mo=slow_mo,
-                    args=["--disable-blink-features=AutomationControlled"],
-                )
-
-                context = browser.new_context(
-                    viewport={"width": 1920, "height": 1080},
-                    user_agent=(
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                        "AppleWebKit/537.36 (KHTML, like Gecko) "
-                        "Chrome/121.0.0.0 Safari/537.36"
-                    ),
-                    extra_http_headers={
-                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
-                        "Accept-Encoding": "gzip, deflate, br",
-                        "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
-                        "Cache-Control": "max-age=0",
-                        "DNT": "1",
-                    },
-                    locale="en-US",
-                )
+                browser = p.chromium.launch(**self._get_launch_options())
+                context = browser.new_context(**self._get_context_options())
 
                 page = context.new_page()
                 stealth_sync(page)

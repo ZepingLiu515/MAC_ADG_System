@@ -286,16 +286,7 @@ def print_system_info():
     print(f"操作系统: {platform.system()} {platform.release()}")
     print(f"当前时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
-    # 检查环境变量
-    try:
-        from config import DEEPSEEK_API_KEY, DEEPSEEK_MODEL
-        if DEEPSEEK_API_KEY:
-            print(f"✅ DeepSeek API 已配置")
-            print(f"   • 模型: {DEEPSEEK_MODEL}")
-        else:
-            print(f"⚠️ DeepSeek API 未配置")
-    except:
-        print(f"⚠️ 配置文件读取失败")
+    # 本项目不依赖外部 LLM 服务
 
 
 def main():

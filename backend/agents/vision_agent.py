@@ -1,14 +1,15 @@
-import os
-import base64
-import requests
 import json
-from typing import Any, Dict, List, Optional
+import logging
+import os
 import re
+from typing import Any, Dict, List, Optional
 
 from ..utils.ocr_rule_parser import OcrRuleParser
 from ..utils.webdriver import WebDriverAdapter
 
-from config import VISUAL_SLICE_DIR, DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL
+from config import VISUAL_SLICE_DIR
+
+logger = logging.getLogger(__name__)
 
 class VisionAgent:
     """
@@ -26,6 +27,99 @@ class VisionAgent:
         self.webdriver = WebDriverAdapter()
         self.ocr_rule_parser = OcrRuleParser()
 
+    def _load_bgr_image(self, image_path: str) -> Any:
+        """Load image as BGR array when possible; fall back to path string."""
+        try:
+            import cv2  # type: ignore[import-not-found]
+
+            img = cv2.imread(image_path)
+            if img is not None:
+                return img
+        except Exception as exc:
+            logger.debug("[Vision] cv2 load failed: %s", exc)
+
+        try:
+            from PIL import Image  # type: ignore[import-not-found]
+            import numpy as np  # type: ignore[import-not-found]
+
+            img = Image.open(image_path).convert("RGB")
+            arr = np.array(img)
+            return arr[:, :, ::-1].copy()
+        except Exception as exc:
+            logger.debug("[Vision] PIL/numpy load failed: %s", exc)
+
+        logger.debug("[Vision] Falling back to image path for OCR input")
+        return image_path
+
+    def _normalize_ocr_result(self, result: Any) -> tuple[List[str], List[Dict[str, Any]]]:
+        """Normalize OCR outputs (PaddleOCR/PaddleX) into text lines + box items."""
+        items: List[Dict[str, Any]] = []
+        text_lines: List[str] = []
+
+        def _add_line(text: str, score: Any = None, box: Any = None) -> None:
+            text_s = str(text or "").strip()
+            if not text_s:
+                return
+            items.append({"text": text_s, "score": score, "box": box})
+            if score is None or (isinstance(score, (int, float)) and score > 0.3):
+                text_lines.append(text_s)
+
+        def _handle_dict(res: Dict[str, Any]) -> None:
+            rec_texts = res.get("rec_texts") or []
+            rec_scores = res.get("rec_scores") or []
+            dt_polys = res.get("dt_polys") or res.get("det_polys") or []
+
+            if isinstance(rec_texts, str):
+                rec_texts = [rec_texts]
+            if not isinstance(rec_texts, list):
+                rec_texts = []
+            if not isinstance(rec_scores, list):
+                rec_scores = []
+            if not isinstance(dt_polys, list):
+                dt_polys = []
+
+            for idx, text in enumerate(rec_texts):
+                score = rec_scores[idx] if idx < len(rec_scores) else None
+                box = dt_polys[idx] if idx < len(dt_polys) else None
+                _add_line(text, score=score, box=box)
+
+        def _is_line_entry(x: Any) -> bool:
+            return isinstance(x, (list, tuple)) and len(x) >= 2 and isinstance(x[0], (list, tuple))
+
+        if isinstance(result, dict):
+            _handle_dict(result)
+            return text_lines, items
+
+        if isinstance(result, list) and result:
+            if isinstance(result[0], dict):
+                for res in result:
+                    if isinstance(res, dict):
+                        _handle_dict(res)
+                return text_lines, items
+
+            lines = []
+            if _is_line_entry(result[0]):
+                lines = result
+            elif isinstance(result[0], list) and result[0] and _is_line_entry(result[0][0]):
+                lines = result[0]
+
+            for line in lines:
+                try:
+                    box = line[0]
+                    rec = line[1]
+                    text = ""
+                    score = None
+                    if isinstance(rec, (list, tuple)) and rec:
+                        text = str(rec[0] or "").strip()
+                        if len(rec) > 1 and isinstance(rec[1], (int, float)):
+                            score = float(rec[1])
+                    _add_line(text, score=score, box=box)
+                except Exception as exc:
+                    logger.debug("[Vision] OCR line parse failed: %s", exc)
+                    continue
+
+        return text_lines, items
+
     def analyze_screenshot(
         self,
         image_path: str,
@@ -37,8 +131,8 @@ class VisionAgent:
         兼容旧接口：对已有截图执行 OCR+解析，返回与 process 相同的数据结构。
         """
         if not image_path or not os.path.exists(image_path):
-            print(f"[Vision] ⚠️ 无效的截图路径: {image_path}")
-            return {"text": "", "image_path": None, "authors": []}
+            logger.warning("[Vision] Invalid image path: %s", image_path)
+            return {"text": "", "image_path": None, "authors": [], "error": "invalid_image_path"}
 
         # 回填 DOI，便于 mock/fallback 路由
         doi_for_analysis = doi or os.path.splitext(os.path.basename(image_path))[0].replace('_', '/')
@@ -50,8 +144,14 @@ class VisionAgent:
                 meta_institutions=meta_institutions,
             )
         except Exception as exc:
-            print(f"[Vision] ⚠️ analyze_screenshot 失败: {exc}")
-            return self._get_mock_authors(doi_for_analysis)
+            logger.exception("[Vision] analyze_screenshot failed: %s", exc)
+            return {
+                "text": "",
+                "image_path": image_path,
+                "authors": [],
+                "ocr_failed": True,
+                "error": str(exc),
+            }
 
     def _validate_and_normalize_authors(self, authors: Any) -> List[Dict[str, Any]]:
         """
@@ -61,13 +161,13 @@ class VisionAgent:
         输出: 标准化的作者字典列表
         """
         if not isinstance(authors, list):
-            print(f"[Vision] ⚠️ 警告: authors不是list，而是{type(authors)}")
+            logger.warning("[Vision] authors is not list: %s", type(authors))
             return []
         
         validated: List[Dict[str, Any]] = []
         for i, author in enumerate(authors):
             if not isinstance(author, dict):
-                print(f"[Vision] ⚠️ 警告: author[{i}]不是dict，跳过")
+                logger.warning("[Vision] author[%s] is not dict, skipped", i)
                 continue
             
             # 创建标准化的作者记录
@@ -98,12 +198,12 @@ class VisionAgent:
             
             # 验证必要字段
             if not normalized['name'] or normalized['name'].lower() == 'unknown':
-                print(f"[Vision] ⚠️ 警告: author[{i}]缺少name字段，跳过")
+                logger.warning("[Vision] author[%s] missing name, skipped", i)
                 continue
             
             validated.append(normalized)
         
-        print(f"[Vision] ✅ 标准化了{len(validated)}名作者")
+        logger.info("[Vision] Normalized %s authors", len(validated))
         return validated
 
     def process(self, doi):
@@ -114,11 +214,11 @@ class VisionAgent:
         if not doi:
             return {"text": "", "image_path": None, "authors": []}
 
-        print(f"\n[Vision] 📸 通过 WebDriver 获取截图，DOI: {doi}")
+        logger.info("[Vision] Capturing screenshot for DOI: %s", doi)
         image_path = self.webdriver.get_webpage_screenshot(doi)
         if not image_path:
-            print("[Vision] ⚠️ 无法获取截图，使用 mock 数据")
-            return self._get_mock_authors(doi)
+            logger.warning("[Vision] Screenshot unavailable for DOI: %s", doi)
+            return {"text": "", "image_path": None, "authors": [], "error": "screenshot_failed"}
 
         return self.analyze_screenshot(image_path, doi=doi)
     
@@ -130,13 +230,14 @@ class VisionAgent:
         meta_institutions: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
-        新流程：OCR 识别 → DeepSeek 文本模型解析
+        新流程：OCR 识别 → 规则解析
         """
-        print(f"[Vision] 🔍 使用 OCR 识别截图文本...")
+        logger.info("[Vision] Running OCR for %s", doi)
         
         # 第一步：OCR 识别截图中的文本（若可用，先尝试带 BBox 的 OCR 以便做 ROI 切片）
         ocr_text = None
         ocr_items: List[Dict[str, Any]] = []
+        roi_meta: Optional[Dict[str, Any]] = None
         if os.getenv("OCR_ENABLE_ROI", "1").strip().lower() not in {"0", "false", "no"}:
             ocr_text, ocr_items = self._extract_text_and_boxes_by_ocr(image_path)
 
@@ -146,17 +247,26 @@ class VisionAgent:
         if not ocr_text:
             # OCR 失败时不要回退到 mock（会污染后续融合/输出）。
             # 让 Orchestrator 用 hover authors 兜底（或至少保留 Scout authors）。
-            print(f"[Vision] ⚠️  OCR 识别失败，返回空 authors，等待 hover/scout 兜底")
+            logger.warning("[Vision] OCR failed, returning empty authors")
             return {"text": "", "image_path": image_path, "authors": [], "ocr_failed": True}
         
         # ROI 切片：从整页 OCR 中定位作者块和单位块，减少噪声
         if ocr_text and ocr_items and scout_authors:
-            roi_text = self._build_roi_text(image_path, ocr_items, scout_authors)
+            roi_text, roi_meta = self._build_roi_text(image_path, ocr_items, scout_authors)
             if roi_text:
                 ocr_text = roi_text
 
-        # 第二步：用 DeepSeek 文本模型从 OCR 文本中提取作者信息
-        print(f"[Vision] 📝 OCR 识别的文本长度: {len(ocr_text)} 字符")
+        # Persist OCR + BBox + ROI info for audit/debug
+        self._save_ocr_sidecar(
+            image_path,
+            doi,
+            ocr_text,
+            ocr_items,
+            roi_meta,
+        )
+
+        # 第二步：用规则解析从 OCR 文本中提取作者信息
+        logger.info("[Vision] OCR text length: %s", len(ocr_text))
         
         authors = self._parse_authors_from_text(
             ocr_text,
@@ -173,17 +283,16 @@ class VisionAgent:
     
     def _extract_text_by_ocr(self, image_path):
         """
-        使用本地 PaddleOCR（优先）或 DeepSeek API（备选）识别截图中的文本
+        使用本地 PaddleOCR 识别截图中的文本
         
         流程：
         1️⃣ 优先用 PaddleOCR（完全免费，本地运行，中英文支持好）
-        2️⃣ 如果 PaddleOCR 失败，降级到 DeepSeek API
-        3️⃣ 都失败就返回 None
+        2️⃣ 失败就返回 None
         
         返回: 识别的纯文本或 None
         """
         # 方案 1️⃣：优先使用本地 PaddleOCR（最稳定）
-        print("[Vision] 📝 尝试本地 PaddleOCR...")
+        logger.info("[Vision] Running PaddleOCR text extraction")
         try:
             # Paddle/PaddleOCR 在部分版本组合下会触发 PIR/oneDNN 执行器的不兼容错误。
             # 默认使用更保守的执行路径，提升稳定性（用户可自行通过环境变量覆盖）。
@@ -195,54 +304,36 @@ class VisionAgent:
             from paddleocr import PaddleOCR  # type: ignore[import-not-found]
             # 使用新参数名，避免过时警告
             ocr = PaddleOCR(use_textline_orientation=True, lang='ch')
-            result = ocr.predict(str(image_path))  # 改用 predict() 方法（新版本）
+            image_input = self._load_bgr_image(image_path)
+            result = ocr.predict(image_input)
+
+            text_lines, _items = self._normalize_ocr_result(result)
+            if not text_lines:
+                try:
+                    result = ocr.ocr(image_input, cls=True)
+                    text_lines, _items = self._normalize_ocr_result(result)
+                except Exception as exc:
+                    logger.debug("[Vision] OCR fallback failed: %s", exc)
             
-            # 新版本 PaddleOCR 返回列表，第一个元素是 OCRResult 对象（字典结构）
-            if result and len(result) > 0:
-                ocr_result = result[0]
-                
-                # OCRResult 是字典，包含 rec_texts（文字列表）和 rec_scores（置信度列表）
-                if 'rec_texts' in ocr_result:
-                    rec_texts = ocr_result['rec_texts']
-                    rec_scores = ocr_result.get('rec_scores', [])
-                    
-                    # 构建文字列表（只保留置信度 > 0.3 的文字）
-                    text_lines = []
-                    for text, score in zip(rec_texts, rec_scores):
-                        if isinstance(score, (int, float)) and score > 0.3:
-                            if text and text.strip():
-                                text_lines.append(text)
-                    
-                    if text_lines:
-                        ocr_text = "\n".join(text_lines)
-                        print(f"[Vision] ✅ PaddleOCR 成功！识别 {len(text_lines)} 行文字")
-                        return ocr_text
-                
-                print("[Vision] ⚠️ PaddleOCR 没有识别到文字")
-                return None
-            
-            print("[Vision] ⚠️ PaddleOCR 返回结果为空")
+            if text_lines:
+                ocr_text = "\n".join(text_lines)
+                logger.info("[Vision] PaddleOCR extracted %s lines", len(text_lines))
+                return ocr_text
+
+            logger.warning("[Vision] PaddleOCR returned no text")
             return None
         
         except ImportError:
-            print("[Vision] ⚠️ PaddleOCR 未安装，尝试降级到 DeepSeek API...")
+            logger.warning("[Vision] PaddleOCR not installed")
         except Exception as e:
-            print(f"[Vision] ⚠️ PaddleOCR 错误: {e}，尝试降级到 DeepSeek API...")
-        
-        # 方案 2️⃣：降级到 DeepSeek API
-        print("[Vision] 📡 调用 DeepSeek API 作为备选...")
-        ocr_text = self._call_deepseek_ocr(image_path)
-        
-        if ocr_text:
-            print(f"[Vision] ✅ DeepSeek API 成功，提取了 {len(ocr_text)} 字符")
-            return ocr_text
-        else:
-            print(f"[Vision] ❌ 所有 OCR 方案都失败了")
-            return None
+            logger.warning("[Vision] PaddleOCR error: %s", e)
+
+        logger.warning("[Vision] OCR failed")
+        return None
 
     def _extract_text_and_boxes_by_ocr(self, image_path: str) -> tuple[Optional[str], List[Dict[str, Any]]]:
         """OCR + BBox 信息（用于 ROI 切片）。失败时返回 (None, [])."""
-        print("[Vision] 🧩 尝试 OCR+BBox (ROI)")
+        logger.info("[Vision] Running OCR+BBox for ROI")
         try:
             # 保守执行路径，避免 PIR/oneDNN 报错
             os.environ.setdefault("FLAGS_enable_pir_api", "0")
@@ -252,41 +343,23 @@ class VisionAgent:
 
             from paddleocr import PaddleOCR  # type: ignore[import-not-found]
             ocr = PaddleOCR(use_textline_orientation=True, lang='ch')
-            result = ocr.ocr(str(image_path), cls=True)
+            image_input = self._load_bgr_image(image_path)
+            result = ocr.ocr(image_input, cls=True)
+            text_lines, items = self._normalize_ocr_result(result)
 
-            def _is_line_entry(x: Any) -> bool:
-                return isinstance(x, (list, tuple)) and len(x) >= 2 and isinstance(x[0], (list, tuple))
-
-            lines = []
-            if isinstance(result, list) and result:
-                if _is_line_entry(result[0]):
-                    lines = result
-                elif isinstance(result[0], list) and result[0] and _is_line_entry(result[0][0]):
-                    lines = result[0]
-
-            items: List[Dict[str, Any]] = []
-            text_lines: List[str] = []
-            for line in lines:
+            if not text_lines:
                 try:
-                    box = line[0]
-                    rec = line[1]
-                    text = ""
-                    score = None
-                    if isinstance(rec, (list, tuple)) and rec:
-                        text = str(rec[0] or "").strip()
-                        if len(rec) > 1 and isinstance(rec[1], (int, float)):
-                            score = float(rec[1])
-                    if text:
-                        items.append({"text": text, "score": score, "box": box})
-                        if score is None or score > 0.3:
-                            text_lines.append(text)
-                except Exception:
-                    continue
+                    result = ocr.predict(image_input)
+                    text_lines, items = self._normalize_ocr_result(result)
+                except Exception as exc:
+                    logger.debug("[Vision] OCR predict fallback failed: %s", exc)
 
             if text_lines:
                 return "\n".join(text_lines), items
-        except Exception:
-            pass
+        except ImportError:
+            logger.warning("[Vision] PaddleOCR not installed")
+        except Exception as exc:
+            logger.debug("[Vision] OCR+BBox failed: %s", exc)
 
         return None, []
 
@@ -295,10 +368,10 @@ class VisionAgent:
         image_path: str,
         ocr_items: List[Dict[str, Any]],
         scout_authors: List[Dict[str, Any]],
-    ) -> Optional[str]:
+    ) -> tuple[Optional[str], Optional[Dict[str, Any]]]:
         """基于 OCR BBox 切片作者块与单位块，减少噪声。"""
         if not ocr_items or not scout_authors:
-            return None
+            return None, None
 
         def _name_tokens(name: str) -> List[str]:
             tokens = re.findall(r"[A-Za-z]+", str(name or ""))
@@ -352,12 +425,20 @@ class VisionAgent:
                 aff_boxes.append(it.get("box"))
 
         if not author_boxes and not aff_boxes:
-            return None
+            return None, None
 
         try:
             from PIL import Image
             img = Image.open(image_path)
             w, h = img.size
+
+            roi_meta: Dict[str, Any] = {
+                "author_bbox": None,
+                "aff_bbox": None,
+                "author_roi_image": None,
+                "aff_roi_image": None,
+                "roi_texts": [],
+            }
 
             def _crop_to(box: tuple[int, int, int, int], suffix: str) -> Optional[str]:
                 x1, y1, x2, y2 = box
@@ -377,135 +458,103 @@ class VisionAgent:
             roi_texts: List[str] = []
             author_bb = _union_bbox(author_boxes)
             if author_bb:
+                roi_meta["author_bbox"] = list(author_bb)
                 p = _crop_to(author_bb, "roi_author")
                 if p:
+                    roi_meta["author_roi_image"] = p
                     t = self._extract_text_by_ocr(p)
                     if t:
                         roi_texts.append(t)
 
             aff_bb = _union_bbox(aff_boxes)
             if aff_bb:
+                roi_meta["aff_bbox"] = list(aff_bb)
                 p = _crop_to(aff_bb, "roi_aff")
                 if p:
+                    roi_meta["aff_roi_image"] = p
                     t = self._extract_text_by_ocr(p)
                     if t:
                         roi_texts.append(t)
 
             if roi_texts:
-                return "\n".join(roi_texts)
+                roi_meta["roi_texts"] = roi_texts
+                return "\n".join(roi_texts), roi_meta
         except Exception:
-            return None
+            return None, None
 
-        return None
-    
-    def _call_deepseek_ocr(self, image_path):
-        """
-        调用 DeepSeek 的 OCR 接口从图片中识别文本。
-        优先使用远端 OCR API，失败时使用 chat 接口作为备选。
-        返回识别的纯文本或 None。
-        """
-        if not DEEPSEEK_API_KEY:
-            print("[Vision] ⚠️  未配置 DeepSeek API KEY")
-            return None
+        return None, None
+
+    def _save_ocr_sidecar(
+        self,
+        image_path: str,
+        doi: str,
+        ocr_text: str,
+        ocr_items: List[Dict[str, Any]],
+        roi_meta: Optional[Dict[str, Any]],
+    ) -> None:
+        """Save OCR output and BBox/ROI metadata for tracing."""
+        if not image_path or not ocr_text:
+            return
+        base = os.path.splitext(os.path.basename(image_path))[0]
+        sidecar_path = os.path.join(VISUAL_SLICE_DIR, f"{base}_ocr_sidecar.json")
 
         try:
-            with open(image_path, 'rb') as f:
-                image_data = base64.b64encode(f.read()).decode('utf-8')
+            max_items = int(os.getenv("OCR_SIDECAR_MAX_ITEMS", "500").strip() or "500")
+        except Exception:
+            max_items = 500
+        try:
+            max_text = int(os.getenv("OCR_SIDECAR_MAX_TEXT", "4000").strip() or "4000")
+        except Exception:
+            max_text = 4000
 
-            headers = {
-                "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-                "Content-Type": "application/json"
-            }
-
-            # 先尝试标准 OCR endpoint（如果 DeepSeek 提供）
-            ocr_endpoints = [
-                f"{DEEPSEEK_BASE_URL}/vision/ocr",
-                f"{DEEPSEEK_BASE_URL}/ocr",
-                f"{DEEPSEEK_BASE_URL}/v1/ocr"
-            ]
-
-            payload = {
-                "image": f"data:image/png;base64,{image_data}",
-                "language": "auto"
-            }
-
-            for url in ocr_endpoints:
-                try:
-                    resp = requests.post(url, headers=headers, json=payload, timeout=30)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        # 支持多种返回格式
-                        if isinstance(data, dict):
-                            if 'text' in data and data['text']:
-                                return data['text']
-                            if 'ocr_text' in data and data['ocr_text']:
-                                return data['ocr_text']
-                            if 'lines' in data and isinstance(data['lines'], list):
-                                return "\n".join(data['lines'])
-                            if 'choices' in data:
-                                try:
-                                    content = data['choices'][0]['message']['content']
-                                    return content
-                                except Exception:
-                                    pass
-                except Exception:
-                    continue
-
-            # 若远端 OCR endpoint 都不可用，使用 vision 模型识别文本（次优方案）
-            # 尝试两种模型：deepseek-vl（优先）和 deepseek-chat（备选）
-            for model_name in ["deepseek-vl", "deepseek-chat"]:
-                try:
-                    chat_payload = {
-                        "model": model_name,
-                        "messages": [
-                            {
-                                "role": "user",
-                                "content": [
-                                    {
-                                        "type": "text",
-                                        "text": "请将下面图片中可见的所有文本逐行返回，仅返回纯文本，不要任何额外解释或说明。"
-                                    },
-                                    {
-                                        "type": "image_url",
-                                        "image_url": {
-                                            "url": f"data:image/png;base64,{image_data}"
-                                        }
-                                    }
-                                ]
-                            }
-                        ],
-                        "max_tokens": 4096,
-                        "temperature": 0.0
-                    }
-
-                    print(f"[Vision] ℹ️ 使用 {model_name} 模型进行 OCR...")
-                    resp = requests.post(
-                        f"{DEEPSEEK_BASE_URL}/chat/completions",
-                        headers=headers,
-                        json=chat_payload,
-                        timeout=30
-                    )
-                    resp.raise_for_status()
-                    result = resp.json()
-                    
-                    if 'choices' in result and result['choices']:
-                        content = result['choices'][0]['message']['content']
-                        if isinstance(content, str) and content.strip():
-                            print(f"[Vision] ✅ {model_name} OCR 成功")
-                            return content
-                        elif isinstance(content, dict) and 'text' in content:
-                            return content['text']
-                except Exception as e:
-                    print(f"[Vision] ⚠️ {model_name} 模型失败: {e}")
-                    continue
-            
-            # 所有模型都失败了
-            print("[Vision] ❌ 所有 vision 模型都无法识别文本")
+        def _normalize_box(box: Any) -> Any:
+            if not box:
+                return None
+            if isinstance(box, (list, tuple)) and box and isinstance(box[0], (int, float)):
+                out = []
+                for i in range(0, len(box) - 1, 2):
+                    try:
+                        out.append([float(box[i]), float(box[i + 1])])
+                    except Exception:
+                        continue
+                return out
+            if isinstance(box, (list, tuple)) and box and isinstance(box[0], (list, tuple)):
+                out = []
+                for pt in box:
+                    if isinstance(pt, (list, tuple)) and len(pt) >= 2:
+                        try:
+                            out.append([float(pt[0]), float(pt[1])])
+                        except Exception:
+                            continue
+                return out
             return None
 
-        except Exception as e:
-            print(f"[Vision] ❌ DeepSeek OCR 调用错误: {e}")
-            return None
+        items_out: List[Dict[str, Any]] = []
+        for it in ocr_items[:max_items]:
+            if not isinstance(it, dict):
+                continue
+            items_out.append(
+                {
+                    "text": str(it.get("text") or ""),
+                    "score": it.get("score"),
+                    "box": _normalize_box(it.get("box")),
+                }
+            )
+
+        payload = {
+            "doi": doi,
+            "image_path": image_path,
+            "ocr_text": (ocr_text[:max_text] if isinstance(ocr_text, str) else ""),
+            "ocr_items": items_out,
+            "roi": roi_meta or {},
+        }
+
+        try:
+            with open(sidecar_path, "w", encoding="utf-8") as f:
+                json.dump(payload, f, ensure_ascii=True, indent=2)
+        except Exception as exc:
+            logger.debug("[Vision] Failed to save OCR sidecar: %s", exc)
+    
     
     def _parse_authors_from_text(
         self,
@@ -515,237 +564,13 @@ class VisionAgent:
         meta_institutions: Optional[List[str]] = None,
     ) -> List[Dict[str, Any]]:
         """
-        使用 DeepSeek 文本模型从 OCR 文本中提取作者信息和排序
+        使用规则解析从 OCR 文本中提取作者信息和排序
         """
-        if not DEEPSEEK_API_KEY:
-            print("[Vision] ℹ️ 未配置 DeepSeek API KEY，使用规则解析作者/单位")
-            authors = self.ocr_rule_parser.parse_authors_rule_based(
-                ocr_text,
-                doi,
-                scout_authors=scout_authors,
-                meta_institutions=meta_institutions,
-            )
-            return self._validate_and_normalize_authors(authors)
-        
-        try:
-            headers = {
-                "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-                "Content-Type": "application/json"
-            }
-            
-            prompt = f"""根据以下论文文本（通过 OCR 识别），请识别所有作者信息，包括名字、所属机构、作者顺序（作者排序）。
-
-OCR 识别的文本：
----
-{ocr_text[:2000]}
----
-
-请返回 JSON 格式的结果：
-{{
-  "authors": [
-    {{"name": "作者名称", "affiliation": "所属机构", "position": 1, "is_corresponding": false, "is_co_first": false}},
-    ...
-  ]
-}}
-
-重要提示：
-- position 字段必须是作者在论文中出现的顺序（从 1 开始）
-- 通讯作者（带 * 或标记为 Corresponding Author）设置 is_corresponding 为 true
-- 共同一作（带 # 或标记为 Co-first）设置 is_co_first 为 true
-- 只返回有效的 JSON（不要额外文本）"""
-            
-            payload = {
-                "model": "deepseek-chat",  # 用文本模型，不用 VLM
-                "messages": [
-                    {"role": "user", "content": prompt}
-                ],
-                "response_format": {"type": "json_object"},
-                "max_tokens": 2048,
-                "temperature": 0.3  # 低温度，更稳定的 JSON 输出
-            }
-            
-            print(f"[Vision] 🤖 调用 DeepSeek 解析作者信息...")
-            response = requests.post(
-                f"{DEEPSEEK_BASE_URL}/chat/completions",
-                headers=headers,
-                json=payload,
-                timeout=30
-            )
-            
-            response.raise_for_status()
-            result = response.json()
-            content = result['choices'][0]['message']['content']
-            
-            # 尝试解析 JSON
-            try:
-                data = json.loads(content)
-                authors = data.get('authors', [])
-                # ✅ 添加数据验证和规范化
-                authors = self._validate_and_normalize_authors(authors)
-                # 方案A：规则优先。若规则提取到角标/单位，则覆盖 LLM 的单位信息。
-                authors = self._merge_rule_affiliations(
-                    authors,
-                    ocr_text,
-                    scout_authors=scout_authors,
-                    meta_institutions=meta_institutions,
-                )
-                print(f"[Vision] ✅ 成功识别 {len(authors)} 名作者")
-                return authors
-            except json.JSONDecodeError:
-                print(f"[Vision] ⚠️  返回内容不是有效 JSON: {content[:100]}")
-                authors = self.ocr_rule_parser.parse_authors_rule_based(
-                    ocr_text,
-                    doi,
-                    scout_authors=scout_authors,
-                    meta_institutions=meta_institutions,
-                )
-                return self._validate_and_normalize_authors(authors)
-        
-        except Exception as e:
-            print(f"[Vision] ❌ DeepSeek 解析错误: {e}")
-            authors = self.ocr_rule_parser.parse_authors_rule_based(
-                ocr_text,
-                doi,
-                scout_authors=scout_authors,
-                meta_institutions=meta_institutions,
-            )
-            return self._validate_and_normalize_authors(authors)
-
-    def _merge_rule_affiliations(
-        self,
-        llm_authors: List[Dict[str, Any]],
-        ocr_text: str,
-        scout_authors: Optional[List[Dict[str, Any]]] = None,
-        meta_institutions: Optional[List[str]] = None,
-    ) -> List[Dict[str, Any]]:
-        """Rule-first merge for affiliations.
-
-        If ocr-rule extracted affiliation numbers or affiliations, use them.
-        Otherwise keep LLM output.
-        """
-        if not llm_authors:
-            return llm_authors
-
-        rule_authors = self.ocr_rule_parser.parse_authors_rule_based(
+        authors = self.ocr_rule_parser.parse_authors_rule_based(
             ocr_text,
-            doi="",
+            doi,
             scout_authors=scout_authors,
             meta_institutions=meta_institutions,
         )
-        rule_authors = self._validate_and_normalize_authors(rule_authors)
-
-        def _name_key(name: str) -> str:
-            return "".join(ch for ch in str(name or "").lower() if ch.isalnum())
-
-        def _order(a: Dict[str, Any]) -> int:
-            v = a.get("position")
-            if isinstance(v, int):
-                return v
-            v = a.get("order")
-            if isinstance(v, int):
-                return v
-            return -1
-
-        rule_by_name = { _name_key(a.get("name")): a for a in rule_authors if isinstance(a, dict) and a.get("name") }
-        rule_by_order = { _order(a): a for a in rule_authors if isinstance(a, dict) and _order(a) > 0 }
-
-        merged: List[Dict[str, Any]] = []
-        for la in llm_authors:
-            if not isinstance(la, dict):
-                continue
-            key = _name_key(la.get("name"))
-            ra = rule_by_name.get(key) if key else None
-            if ra is None:
-                o = _order(la)
-                if o > 0:
-                    ra = rule_by_order.get(o)
-
-            if ra:
-                # Only override when rule has signals
-                if ra.get("affiliation_numbers"):
-                    la["affiliation_numbers"] = ra.get("affiliation_numbers")
-                if ra.get("affiliations"):
-                    la["affiliations"] = ra.get("affiliations")
-                    la["affiliation"] = "; ".join(ra.get("affiliations") or [])
-                elif ra.get("affiliation"):
-                    la["affiliation"] = ra.get("affiliation")
-                if ra.get("markers"):
-                    la["markers"] = ra.get("markers")
-            merged.append(la)
-
-        return merged
+        return self._validate_and_normalize_authors(authors)
     
-    def _get_mock_authors(self, doi):
-        """
-        返回 fallback 测试数据。
-        
-        当 OCR 或实际作者提取失败时，返回多样化的测试作者数据。
-        这样可以验证系统的匹配逻辑，而不会所有论文都匹配到同一个人。
-        
-        在实际应用中：
-        - 如果论文的作者信息可以正确提取（OCR + LLM），就用真实数据
-        - 如果失败，至少可以用这些 fallback 数据来测试系统功能
-        """
-        # 根据 DOI 的哈希值来"伪随机"选择 fallback 数据
-        # 这样即使不备 OCR，多个论文也会有不同的 mock 作者
-        
-        import hashlib
-        doi_hash = int(hashlib.md5(doi.encode()).hexdigest(), 16)
-        choice = doi_hash % 3  # 循环选择 3 种 fallback 数据
-        
-        fallback_datasets = [
-            # 选项 1: 你自己的信息 - 多部门
-            {
-                "text": "[Fallback 1] 你的论文作者",
-                "authors": [
-                    {
-                        "name": "刘泽萍",
-                        "affiliation": "West China School of Medicine, Sichuan University, Chengdu, China",
-                        "position": 1,
-                        "is_corresponding": False,
-                        "is_co_first": False
-                    }
-                ]
-            },
-            # 选项 2: 其他机构的教师（测试多部门匹配）
-            {
-                "text": "[Fallback 2] 其他论文作者 - 计算机学院",
-                "authors": [
-                    {
-                        "name": "刘泽萍",
-                        "affiliation": "College of Computer Science, Sichuan University, Chengdu, China",
-                        "position": 1,
-                        "is_corresponding": True,
-                        "is_co_first": False
-                    }
-                ]
-            },
-            # 选项 3: 完全不同的作者（测试无匹配情况）
-            {
-                "text": "[Fallback 3] 未知作者论文",
-                "authors": [
-                    {
-                        "name": "李明",
-                        "affiliation": "北京大学计算机学院",
-                        "position": 1,
-                        "is_corresponding": False,
-                        "is_co_first": False
-                    },
-                    {
-                        "name": "王涛",
-                        "affiliation": "清华大学",
-                        "position": 2,
-                        "is_corresponding": True,
-                        "is_co_first": False
-                    }
-                ]
-            }
-        ]
-        
-        selected = fallback_datasets[choice]
-        
-        return {
-            "text": selected["text"],
-            "image_path": None,
-            "authors": selected["authors"]
-        }

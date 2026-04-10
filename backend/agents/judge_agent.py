@@ -11,17 +11,20 @@
 """
 
 import json
+import logging
 import os
-from typing import List, Dict, Tuple
-from difflib import SequenceMatcher
-import requests
-from typing import Optional
 import re
+from difflib import SequenceMatcher
+from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 from database.connection import get_db
 from database.models import Faculty, Paper, PaperAuthor
-from config import DEEPSEEK_API_KEY, DEEPSEEK_MODEL, DEEPSEEK_BASE_URL, SCHOOL_AFFILIATION_KEYWORDS
+from config import SCHOOL_AFFILIATION_KEYWORDS
+from ..utils.ocr_rule_parser import OcrRuleParser
+from ..utils.rag_memory import build_layout_fingerprint, retrieve_memory_hints
+
+logger = logging.getLogger(__name__)
 
 
 class JudgeAgent:
@@ -39,6 +42,82 @@ class JudgeAgent:
         self.name_threshold = 0.7  # 名字相似度阈值
         self.affiliation_threshold = 0.6  # 单位相似度阈值
         self.match_threshold = 0.75  # 综合匹配阈值
+        self.ocr_rule_parser = OcrRuleParser()
+
+    def _extract_affiliation_map(self, vision_data: dict) -> Dict[int, str]:
+        if not isinstance(vision_data, dict):
+            return {}
+
+        raw_map = vision_data.get("affiliation_map") or vision_data.get("affiliation_dict")
+        if isinstance(raw_map, dict):
+            cleaned: Dict[int, str] = {}
+            for key, val in raw_map.items():
+                try:
+                    num = int(key)
+                except Exception:
+                    continue
+                text = str(val or "").strip()
+                if text:
+                    cleaned[num] = text
+            if cleaned:
+                return cleaned
+
+        text = vision_data.get("full_text") or vision_data.get("ocr_text") or vision_data.get("text") or ""
+        if text:
+            return self.ocr_rule_parser.extract_affiliation_map(text)
+        return {}
+
+    def _enforce_affiliation_mapping(self, authors: List[dict], vision_data: dict) -> None:
+        """Enforce strict affiliation mapping for authors with markers."""
+        if not authors:
+            return
+
+        aff_map = self._extract_affiliation_map(vision_data)
+        strict = str(os.getenv("JUDGE_STRICT_AFFILIATION_MAPPING", "1")).strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "y",
+        }
+
+        for author in authors:
+            if not isinstance(author, dict):
+                continue
+            nums = author.get("affiliation_numbers")
+            if not isinstance(nums, list) or not nums:
+                continue
+
+            norm_nums: List[int] = []
+            for n in nums:
+                try:
+                    num = int(n)
+                except Exception:
+                    continue
+                if num > 0:
+                    norm_nums.append(num)
+
+            if not norm_nums:
+                continue
+
+            mapped: List[str] = []
+            missing = 0
+            for num in norm_nums:
+                aff = aff_map.get(num)
+                if aff:
+                    mapped.append(aff)
+                else:
+                    missing += 1
+
+            if mapped:
+                author["affiliations"] = mapped
+                author["affiliation"] = "; ".join(mapped)
+                author["affiliation_map_status"] = "partial" if missing else "mapped"
+            else:
+                author["affiliation_map_status"] = "missing"
+                if strict:
+                    author["affiliations"] = []
+                    author["affiliation"] = "Unknown"
+                    logger.debug("[Judge] Missing affiliation map for %s", author.get("name"))
     
     def adjudicate(self, scout_data: dict, vision_data: dict = None) -> Optional[dict]:
         """
@@ -62,15 +141,16 @@ class JudgeAgent:
         journal = scout_data.get("journal")
         pub_date = scout_data.get("publish_date")
         
-        print(f"\n[Judge] 🔍 处理论文: {doi}")
-        print(f"[Judge] 标题: {title[:60]}...")
+        logger.info("[Judge] Processing DOI: %s", doi)
+        if isinstance(title, str):
+            logger.info("[Judge] Title: %s", title[:60])
         
         db: Session = next(get_db())
         
         try:
             # 1️⃣ 获取 Crossref 数据
             crossref_authors = scout_data.get("authors", [])
-            print(f"[Judge] 📥 Crossref 作者数: {len(crossref_authors)} 人")
+            logger.info("[Judge] Crossref authors: %s", len(crossref_authors))
             
             # 2️⃣【快速筛选】检查是否有学校单位
             school_kws = self._get_school_affiliation_keywords(db)
@@ -95,9 +175,9 @@ class JudgeAgent:
                 # Crossref 有数据
                 if has_school_aff:
                     # ✅ 有学校单位 → 调用 Vision 提取权益标记
-                    print(f"[Judge] ✅ 检测到本校单位，需要提取权益标记")
+                    logger.info("[Judge] School affiliation detected, using vision markers")
                     vision_authors = vision_data.get("authors", []) if vision_data else []
-                    print(f"[Judge] 📥 Vision 作者数: {len(vision_authors)} 人")
+                    logger.info("[Judge] Vision authors: %s", len(vision_authors))
                 else:
                     # ⏭️ 无学校单位：
                     # - 若单位信息本身大量缺失（Unknown），不能据此强跳过；允许使用 Vision/hover 来补单位与权益线索。
@@ -116,25 +196,30 @@ class JudgeAgent:
                             if aff and aff != 'unknown':
                                 has_any_aff_from_vision = True
                                 break
-                    except Exception:
+                    except Exception as exc:
                         has_any_aff_from_vision = False
+                        logger.debug("[Judge] Vision affiliation scan failed: %s", exc)
 
                     if (has_any_aff_from_vision and vision_authors) or (_affiliations_mostly_unknown(crossref_authors) and vision_authors):
-                        print(f"[Judge] ⚠️ 使用 Vision/hover 的单位信息继续处理（避免误跳过）")
+                        logger.info("[Judge] Using vision/hover affiliations to avoid false skip")
                     else:
                         # 现实情况：Crossref 往往不给单位，且“学校单位”可能只有英文/缩写，
                         # 用 departments 做快速筛选容易误伤。这里不再提前跳过，交给后续
                         # “姓名+单位”匹配来决定是否有本校作者。
-                        print(f"[Judge] ℹ️ 未检测到本校单位，继续完整匹配（避免误跳过）")
+                        logger.info("[Judge] No school affiliation detected; continue matching")
             else:
                 # Crossref 为空 → 用 Vision 识别
-                print(f"[Judge] 💡 Crossref 为空，用 Vision 识别")
+                logger.info("[Judge] Crossref empty, using vision authors")
                 vision_authors = vision_data.get("authors", []) if vision_data else []
-                print(f"[Judge] 📥 Vision 作者数: {len(vision_authors)} 人")
+                logger.info("[Judge] Vision authors: %s", len(vision_authors))
+
+            # 严格角标映射：要求先有 affiliation_map，再由 Python 映射到作者
+            if vision_authors and vision_data:
+                self._enforce_affiliation_mapping(vision_authors, vision_data)
             
             # 如果最终没有任何作者数据，跳过
             if not crossref_authors and not vision_authors:
-                print(f"[Judge] ⚠️ 无作者数据，跳过本论文")
+                logger.warning("[Judge] No authors detected, skipping DOI: %s", doi)
                 return {"status": "skipped", "doi": doi, "reason": "无作者数据"}
             
             # 3️⃣ 检查或创建论文记录
@@ -144,27 +229,78 @@ class JudgeAgent:
             try:
                 db.query(PaperAuthor).filter(PaperAuthor.paper_doi == doi).delete(synchronize_session=False)
                 db.flush()
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("[Judge] Failed to clear PaperAuthor for %s: %s", doi, exc)
             
             # 4️⃣ 融合作者数据
             merged_authors = self._merge_authors(crossref_authors, vision_authors)
+
+            # 4.5️⃣ 轻量 RAG 记忆检索（仅提供提示信号，不改变主逻辑）
+            memory_tokens = build_layout_fingerprint(vision_data or {})
+            memory_hints = retrieve_memory_hints(db, memory_tokens)
+            memory_hint_count = len(memory_hints)
+            memory_top_score = memory_hints[0].get("score", 0.0) if memory_hints else 0.0
+            if memory_hints:
+                logger.info(
+                    "[Judge] Memory hints: %s (top score=%.2f)",
+                    memory_hint_count,
+                    memory_top_score,
+                )
             
             # 5️⃣ 获取本校教师名单
             all_faculty = db.query(Faculty).all()
-            print(f"[Judge] 📚 本校教师数: {len(all_faculty)} 人")
+            logger.info("[Judge] Faculty count: %s", len(all_faculty))
             faculty_loaded = len(all_faculty) > 0
 
             # ✅ 测试友好：尚未导入教师/单位库时，不应直接 SKIPPED。
             # 该模式会把作者落库并标记 NEEDS_REVIEW，便于你验证“识别作者+单位+通讯/共一”的主链路。
             if not faculty_loaded:
-                print("[Judge] 🧪 教师/单位库为空：进入测试模式（不跳过，落库 NEEDS_REVIEW）")
+                logger.info("[Judge] Faculty table empty; entering test mode")
             
             # 6️⃣ 对每个作者进行身份匹配
-            print(f"\n[Judge] 🎯 执行身份匹配:")
+            logger.info("[Judge] Running identity matching")
             matched_count = 0
             saved_count = 0
             needs_review_count = 0
+
+            def _name_key(name: str) -> str:
+                if not name:
+                    return ""
+                return "".join(ch for ch in str(name).lower() if ch.isalnum())
+
+            crossref_keys = {_name_key(a.get("name")) for a in crossref_authors if isinstance(a, dict)}
+            vision_keys = {_name_key(a.get("name")) for a in vision_authors if isinstance(a, dict)}
+
+            def _has_structured_aff(author: dict) -> bool:
+                if not isinstance(author, dict):
+                    return False
+                affs = author.get("affiliations")
+                if isinstance(affs, list) and any(str(x).strip() for x in affs):
+                    return True
+                src = str(author.get("source") or "").lower().strip()
+                return src in {"meta-guided", "hover", "meta:citation_author", "ocr-rule", "ocr"}
+
+            def _evidence_for(author: dict) -> tuple[float, List[str]]:
+                if not isinstance(author, dict):
+                    return 0.0, []
+                sources: List[str] = []
+                score = 0.0
+                key = _name_key(author.get("name"))
+                if key and key in crossref_keys:
+                    score += 0.4
+                    sources.append("crossref")
+                if key and key in vision_keys:
+                    score += 0.4
+                    sources.append("vision")
+                if _has_structured_aff(author):
+                    score += 0.1
+                    sources.append("structured_aff")
+                has_mark = bool(author.get("has_mail_icon")) or bool(author.get("emails"))
+                has_mark = has_mark or ("*" in str(author.get("markers") or ""))
+                if has_mark:
+                    score += 0.1
+                    sources.append("correspondence_marker")
+                return min(score, 1.0), sources
 
             def _author_hits_school_aff(author: dict) -> bool:
                 """作者单位是否命中本校单位/部门关键词。
@@ -249,6 +385,8 @@ class JudgeAgent:
                 hits_school_aff = _author_hits_school_aff(author)
                 aff_unknown = _author_aff_is_unknown(author)
 
+                evidence_score, evidence_sources = _evidence_for(author)
+
                 matched_faculty = None
                 confidence = 0.0
 
@@ -263,18 +401,23 @@ class JudgeAgent:
 
                 # 打印
                 if matched_faculty:
-                    print(f"  {idx}. {author['name']}")
-                    print(f"     ✅ 匹配: {matched_faculty.name_zh} ({matched_faculty.department})")
-                    print(f"     📊 置信度: {confidence:.2%}")
+                    logger.info(
+                        "[Judge] %s. %s matched %s (%s) confidence=%.2f",
+                        idx,
+                        author.get("name"),
+                        matched_faculty.name_zh,
+                        matched_faculty.department,
+                        confidence,
+                    )
                 else:
-                    print(f"  {idx}. {author['name']} - 未匹配")
+                    logger.info("[Judge] %s. %s unmatched", idx, author.get("name"))
 
                 # ✅ 落库决策：
                 # - 有教师库：只落“匹配到本校教师 / 或单位命中本校关键词”的作者
                 # - 无教师库：全部落库（测试模式）
                 if faculty_loaded:
                     if (matched_faculty is None) and (not hits_school_aff):
-                        print(f"     ⏭️ 跳过：非本校相关作者（单位未命中）")
+                        logger.info("[Judge] Skipped non-school author: %s", author.get("name"))
                         continue
 
                 paper_author = PaperAuthor(
@@ -294,6 +437,10 @@ class JudgeAgent:
                             )
                         ),
                         "source": author.get("source"),
+                        "evidence_score": evidence_score,
+                        "evidence_sources": evidence_sources,
+                        "memory_hint_count": memory_hint_count,
+                        "memory_top_score": memory_top_score,
                     },
                 )
                 db.add(paper_author)
@@ -307,7 +454,7 @@ class JudgeAgent:
             if saved_count <= 0:
                 paper.status = "SKIPPED"
                 db.commit()
-                print(f"\n[Judge] ⏭️ 论文跳过：无本校相关作者")
+                logger.info("[Judge] Skipped DOI %s; no school-related authors", doi)
                 return {
                     "status": "skipped",
                     "doi": doi,
@@ -324,8 +471,12 @@ class JudgeAgent:
                 paper.status = "NEEDS_REVIEW" if needs_review_count > 0 else "COMPLETED"
             db.commit()
 
-            print(
-                f"\n[Judge] ✅ 论文处理完成：保存 {saved_count} 位本校相关作者，匹配 {matched_count}/{len(merged_authors)}"
+            logger.info(
+                "[Judge] Completed DOI %s: saved=%s matched=%s/%s",
+                doi,
+                saved_count,
+                matched_count,
+                len(merged_authors),
             )
 
             return {
@@ -338,9 +489,9 @@ class JudgeAgent:
             }
         
         except Exception as e:
-            print(f"[Judge] ❌ 处理失败: {e}")
+            logger.exception("[Judge] Failed to process DOI %s: %s", doi, e)
             db.rollback()
-            return None
+            return {"status": "error", "doi": doi, "reason": str(e)}
         
         finally:
             db.close()
@@ -351,7 +502,7 @@ class JudgeAgent:
         existing = db.query(Paper).filter(Paper.doi == doi).first()
         
         if existing:
-            print(f"[Judge] 📄 论文已存在（重复处理）")
+            logger.info("[Judge] Paper already exists: %s", doi)
             return existing
         
         paper = Paper(
@@ -364,7 +515,7 @@ class JudgeAgent:
         db.add(paper)
         db.flush()
         
-        print(f"[Judge] ➕ 创建新论文记录")
+        logger.info("[Judge] Created new paper record: %s", doi)
         return paper
     
     def _get_school_departments(self, db: Session) -> List[str]:
@@ -400,8 +551,8 @@ class JudgeAgent:
                     for dept in dept_list:
                         if dept:
                             _add_dept_variant(dept)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("[Judge] Failed to parse departments for %s: %s", faculty.employee_id, exc)
         
         return list(departments)
     
@@ -443,7 +594,7 @@ class JudgeAgent:
             
             for kw in school_kws:
                 if kw in aff or aff in kw:
-                    print(f"[Judge] 🎯 匹配到学校单位: {author.get('name')} @ {aff}")
+                    logger.info("[Judge] School affiliation hit: %s @ %s", author.get("name"), aff)
                     return True
         
         return False
@@ -498,7 +649,7 @@ class JudgeAgent:
 
         # 情况 1：Crossref 有数据 → 以 Crossref 为主
         if crossref_authors and len(crossref_authors) > 0:
-            print(f"[Judge] 💡 使用 Crossref 作者列表作为基础（{len(crossref_authors)} 人）")
+            logger.info("[Judge] Using Crossref authors (%s)", len(crossref_authors))
             
             # 确保所有作者都有权益字段
             for author in crossref_authors:
@@ -509,7 +660,7 @@ class JudgeAgent:
             
             # 情况 1a：也有 Vision 数据 → 从 Vision 中提取权益标记并合并
             if vision_authors and len(vision_authors) > 0:
-                print(f"[Judge] 📝 从 Vision 中提取权益标记（{len(vision_authors)} 人）")
+                logger.info("[Judge] Merging vision markers (%s)", len(vision_authors))
                 
                 # 建立 Vision 作者的查询表（按名字归一化 + 按顺序）
                 vision_map = {}
@@ -580,13 +731,13 @@ class JudgeAgent:
                                 author['is_corresponding'] = False
                         merged_count += 1
                 
-                print(f"[Judge] ✅ 成功合并 {merged_count} 位作者的权益标记")
+                logger.info("[Judge] Merged %s author markers", merged_count)
             
             return crossref_authors
         
         # 情况 2：Crossref 为空 → 回退到 Vision
         if vision_authors and len(vision_authors) > 0:
-            print(f"[Judge] 💡 Crossref 为空，使用 Vision 作者数据（{len(vision_authors)} 人）")
+            logger.info("[Judge] Crossref empty, using vision authors (%s)", len(vision_authors))
             
             # 确保 Vision 作者也有权益字段
             for author in vision_authors:
@@ -598,7 +749,7 @@ class JudgeAgent:
             return vision_authors
         
         # 情况 3：都没有数据
-        print(f"[Judge] ⚠️ 没有作者数据（Crossref 和 Vision 都为空）")
+        logger.warning("[Judge] No authors from Crossref or Vision")
         return []
     
     def _match_author_to_faculty(
@@ -660,12 +811,24 @@ class JudgeAgent:
             candidates.append(faculty.name_zh.lower())
         
         # 英文名变体
-        if faculty.name_en_json:
+        name_en_list = getattr(faculty, "name_en_list", None)
+        if isinstance(name_en_list, list):
+            candidates.extend([str(n).lower() for n in name_en_list if n])
+        elif isinstance(name_en_list, str) and name_en_list.strip():
             try:
-                en_names = json.loads(faculty.name_en_json)
-                candidates.extend([n.lower() for n in en_names if n])
-            except:
-                pass
+                en_names = json.loads(name_en_list)
+                candidates.extend([str(n).lower() for n in en_names if n])
+            except Exception as exc:
+                logger.debug("[Judge] Failed to parse name_en_list for %s: %s", faculty.employee_id, exc)
+
+        # Backward compatibility for legacy field name
+        name_en_json = getattr(faculty, "name_en_json", None)
+        if isinstance(name_en_json, str) and name_en_json.strip():
+            try:
+                en_names = json.loads(name_en_json)
+                candidates.extend([str(n).lower() for n in en_names if n])
+            except Exception as exc:
+                logger.debug("[Judge] Failed to parse name_en_json for %s: %s", faculty.employee_id, exc)
         
         if not candidates:
             return 0.0
@@ -713,8 +876,8 @@ class JudgeAgent:
             try:
                 dept_list = json.loads(faculty.departments)
                 depts.extend([d.lower() for d in dept_list if d])
-            except:
-                pass
+            except Exception as exc:
+                logger.debug("[Judge] Failed to parse departments for %s: %s", faculty.employee_id, exc)
         
         if not depts:
             return 0.5
@@ -742,60 +905,4 @@ class JudgeAgent:
         
         return best_score
     
-    def _use_llm_for_verification(self, author_name: str, faculty_name: str,
-                                  author_aff: str, faculty_aff: str) -> float:
-        """
-        使用 LLM 进行最终验证（可选的高级特性）
-        
-        在模棱两可的情况下，用 AI 推理判断是否为同一人
-        """
-        try:
-            prompt = f"""判断以下两个人是否为同一个人（0 = 确定不是，1 = 确定是）：
-
-论文作者：
-- 名字: {author_name}
-- 单位: {author_aff}
-
-学校教师：
-- 名字: {faculty_name}
-- 单位: {faculty_aff}
-
-考虑因素：
-1. 名字相似度（拼写、缩写、翻译）
-2. 单位翻译和别名
-3. 常见的名字变体
-
-返回 0-1 之间的置信度。"""
-            
-            headers = {
-                'Authorization': f'Bearer {DEEPSEEK_API_KEY}',
-                'Content-Type': 'application/json'
-            }
-            
-            payload = {
-                'model': DEEPSEEK_MODEL,
-                'messages': [{'role': 'user', 'content': prompt}]
-            }
-            
-            response = requests.post(
-                f'{DEEPSEEK_BASE_URL}/chat/completions',
-                headers=headers,
-                json=payload,
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                text = result['choices'][0]['message']['content']
-                
-                # 尝试提取数字
-                try:
-                    score = float([w for w in text.split() if w.replace('.', '').isdigit()][-1])
-                    return score / 100 if score > 1 else score
-                except:
-                    pass
-        
-        except Exception as e:
-            print(f"[Judge] ⚠️ LLM 验证失败: {e}")
-        
-        return 0.5  # 默认返回中等置信度
+    # 外部 LLM 验证逻辑已移除（本项目不依赖外部 LLM 服务）

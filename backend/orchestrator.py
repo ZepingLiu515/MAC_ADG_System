@@ -1,18 +1,24 @@
-import pandas as pd
+import logging
 import os
-from typing import Any, List, Dict, Set
+from typing import Any, Dict, List, Optional, Set
+
+import pandas as pd
 
 from .agents.scout_agent import ScoutAgent
 from .agents.vision_agent import VisionAgent
 from .agents.judge_agent import JudgeAgent
 from .utils.webdriver import WebDriverAdapter
+from .utils.schemas import AgentResult, DuplicateStrategy, FSMState
+from database.settings import get_duplicate_strategy
 from database.connection import get_db
 from database.models import Paper, PaperAuthor
+
+logger = logging.getLogger(__name__)
 
 
 class Orchestrator:
     """
-    运行 Scout→Vision→Judge 流水线的中央协调器。
+    运行 Scout→Perception→Arbitration→Evolution 的 FSM 协调器。
     
     改进的流程：
     1️⃣ Scout Agent：从 Crossref API 获取元数据和作者信息
@@ -50,7 +56,7 @@ class Orchestrator:
         - 耗时：~50ms（不管有多少 DOI）
         - 比逐个查询快 100-1000 倍
         """
-        print(f"\n🔍 批量检查 {len(dois)} 个 DOI 的状态...")
+        logger.info("[Orchestrator] Batch checking %s DOIs", len(dois))
         
         # ⚡ 核心优化：一次性查询所有 DOI（使用 SQL IN 语句）
         papers = db.query(Paper).filter(Paper.doi.in_(dois)).all()
@@ -75,15 +81,353 @@ class Orchestrator:
         processing_count = sum(1 for v in doi_status_map.values() if v.get('status') == 'PROCESSING')
         new_count = sum(1 for v in doi_status_map.values() if not v.get('exists'))
         
-        print(f"   ✅ 已完成: {completed_count}")
-        print(f"   ⏳ 处理中: {processing_count}")
-        print(f"   ➕ 新论文: {new_count}\n")
+        logger.info("[Orchestrator] Completed: %s", completed_count)
+        logger.info("[Orchestrator] Processing: %s", processing_count)
+        logger.info("[Orchestrator] New: %s", new_count)
         
         return doi_status_map
 
     # ------------------------------------------------------------------
     # 公开辅助函数
     # ------------------------------------------------------------------
+    def _build_cached_record(self, doi: str, status_info: Dict[str, Any], db) -> Dict[str, Any]:
+        authors = db.query(PaperAuthor).filter(PaperAuthor.paper_doi == doi).all()
+        author_rows = []
+        for a in authors:
+            author_rows.append(
+                {
+                    "name": a.raw_name,
+                    "affiliation": a.raw_affiliation,
+                    "affiliations": a.raw_affiliations,
+                    "position": a.rank,
+                    "is_corresponding": a.is_corresponding,
+                    "is_co_first": a.is_co_first,
+                    "matched_faculty_id": a.matched_faculty_id,
+                    "source": "db_cache",
+                }
+            )
+        return {
+            "doi": doi,
+            "title": status_info.get("title"),
+            "status": status_info.get("status"),
+            "matched_authors": len([a for a in authors if a.matched_faculty_id]),
+            "total_authors": len(authors),
+            "skipped": True,
+            "authors": author_rows,
+        }
+
+    def _run_pre_flight_state(self, doi: str, status_info: Optional[Dict[str, Any]], db) -> AgentResult:
+        """PRE_FLIGHT: check duplicate strategy and cached results."""
+        strategy = get_duplicate_strategy(db)
+        payload: Dict[str, Any] = {"strategy": strategy.value}
+
+        if not status_info or not status_info.get("exists"):
+            payload["action"] = "continue"
+            return AgentResult(True, confidence=1.0, payload=payload, source="pre_flight")
+
+        status = status_info.get("status")
+        if status == "PROCESSING" and strategy != DuplicateStrategy.OVERWRITE:
+            payload["action"] = "skip_processing"
+            payload["record"] = {"doi": doi, "status": "PROCESSING", "skipped": True}
+            return AgentResult(True, confidence=1.0, payload=payload, source="pre_flight")
+
+        if status in {"COMPLETED", "SKIPPED", "NEEDS_REVIEW"}:
+            if strategy in {DuplicateStrategy.SKIP, DuplicateStrategy.PROMPT}:
+                payload["action"] = "skip_cached"
+                payload["record"] = self._build_cached_record(doi, status_info, db)
+                return AgentResult(True, confidence=1.0, payload=payload, source="pre_flight")
+            if strategy == DuplicateStrategy.OVERWRITE:
+                try:
+                    db.query(PaperAuthor).filter(PaperAuthor.paper_doi == doi).delete(synchronize_session=False)
+                    paper = db.query(Paper).filter(Paper.doi == doi).first()
+                    if paper:
+                        paper.status = "PROCESSING"
+                    db.commit()
+                except Exception as exc:
+                    logger.warning("[Orchestrator] Failed clearing cached data for %s: %s", doi, exc)
+                payload["action"] = "continue"
+                return AgentResult(True, confidence=1.0, payload=payload, source="pre_flight")
+
+        payload["action"] = "continue"
+        return AgentResult(True, confidence=1.0, payload=payload, source="pre_flight")
+    def _run_scout_state(self, doi: str) -> AgentResult:
+        """SCOUTING: fetch metadata and authors."""
+        try:
+            scout_data = self.scout.run(doi)
+            if not isinstance(scout_data, dict):
+                return AgentResult(
+                    success=False,
+                    confidence=0.1,
+                    payload={},
+                    error_msg="scout_invalid_result",
+                    source="scout",
+                )
+            if scout_data.get("status") == "error":
+                return AgentResult(
+                    success=False,
+                    confidence=0.2,
+                    payload=scout_data,
+                    error_msg=scout_data.get("message", "scout_error"),
+                    source="scout",
+                )
+            return AgentResult(
+                success=True,
+                confidence=0.9,
+                payload=scout_data,
+                source="scout",
+            )
+        except Exception as exc:
+            logger.exception("[Orchestrator] Scout failed: %s", exc)
+            return AgentResult(
+                success=False,
+                confidence=0.0,
+                payload={},
+                error_msg=str(exc),
+                source="scout",
+            )
+
+    def _merge_hover_into_vision(self, record: Dict[str, Any]) -> None:
+        """Merge hover-derived author signals into vision data."""
+        page_author_data = record.get("page_author_data")
+        if not isinstance(page_author_data, dict):
+            return
+
+        hover_authors = page_author_data.get("authors") or []
+        if not hover_authors:
+            return
+
+        vdata = record.get("vision_data") or {}
+        vauthors = vdata.get("authors") or []
+
+        if not vauthors:
+            vdata["authors"] = hover_authors
+            vdata["text"] = vdata.get("text") or ""
+            raw_tooltips = page_author_data.get("raw_tooltips") or []
+            tooltip_text = "\n".join(
+                [
+                    t.get("tooltip", "")
+                    for t in raw_tooltips
+                    if isinstance(t, dict) and t.get("tooltip")
+                ]
+            )
+            if tooltip_text and not vdata["text"]:
+                vdata["text"] = tooltip_text
+            vdata["source"] = "hover"
+            record["vision_data"] = vdata
+            record["vision_authors"] = hover_authors
+            logger.info("[Orchestrator] Vision data filled by hover authors")
+            return
+
+        def _name_key(name: str) -> str:
+            if not name:
+                return ""
+            return "".join(ch for ch in str(name).lower() if ch.isalnum())
+
+        def _order(a: dict) -> int:
+            if not isinstance(a, dict):
+                return -1
+            for key in ("order", "position"):
+                val = a.get(key)
+                if isinstance(val, int):
+                    return val
+            return -1
+
+        hover_by_name = {
+            _name_key(a.get("name")): a
+            for a in hover_authors
+            if isinstance(a, dict) and a.get("name")
+        }
+        hover_by_order = {
+            _order(a): a
+            for a in hover_authors
+            if isinstance(a, dict) and _order(a) > 0
+        }
+
+        merged = 0
+        for va in vauthors:
+            if not isinstance(va, dict):
+                continue
+            key = _name_key(va.get("name"))
+            ha = hover_by_name.get(key) if key else None
+            if ha is None:
+                order = _order(va)
+                if order > 0:
+                    ha = hover_by_order.get(order)
+            if not ha:
+                continue
+
+            for flag in ("is_corresponding", "is_co_first"):
+                if flag in ha:
+                    va[flag] = bool(va.get(flag)) or bool(ha.get(flag))
+
+            v_aff = str(va.get("affiliation") or "").strip()
+            h_aff = str(ha.get("affiliation") or "").strip()
+            if (not v_aff) or (v_aff.lower() == "unknown"):
+                if h_aff and h_aff.lower() != "unknown":
+                    va["affiliation"] = h_aff
+
+            for key in ("emails", "has_mail_icon", "markers", "source"):
+                if key in ha and key not in va:
+                    va[key] = ha.get(key)
+            if va.get("is_corresponding") and not va.get("corresponding_source") and ha.get("is_corresponding"):
+                va["corresponding_source"] = "hover"
+            merged += 1
+
+        if merged:
+            vdata["authors"] = vauthors
+            record["vision_data"] = vdata
+            record["vision_authors"] = vauthors
+            logger.info("[Orchestrator] Hover signals merged into %s authors", merged)
+
+    def _run_perception_state(self, doi: str, scout_data: Dict[str, Any]) -> AgentResult:
+        """PERCEPTION: capture screenshot, hover signals, and OCR-based vision data."""
+        payload: Dict[str, Any] = {}
+        error_msg: Optional[str] = None
+
+        try:
+            screenshot_path = self.webdriver.get_webpage_screenshot(
+                doi,
+                landing_page_url=scout_data.get("landing_page_url"),
+            )
+            payload["screenshot_path"] = screenshot_path
+
+            page_author_data: Optional[Dict[str, Any]] = None
+            if os.getenv("PLAYWRIGHT_EXTRACT_AUTHOR_DETAILS", "1").strip() not in {
+                "0",
+                "false",
+                "False",
+                "no",
+                "NO",
+            }:
+                try:
+                    page_author_data = self.webdriver.extract_author_hover_data(
+                        doi,
+                        landing_page_url=scout_data.get("landing_page_url"),
+                    )
+                except Exception as exc:
+                    logger.warning("[Orchestrator] Hover extraction failed: %s", exc)
+
+            if page_author_data and isinstance(page_author_data, dict):
+                payload["page_author_data"] = page_author_data
+
+            if screenshot_path:
+                meta_institutions = None
+                if isinstance(page_author_data, dict):
+                    meta = page_author_data.get("meta") or {}
+                    mi = meta.get("citation_author_institution")
+                    if isinstance(mi, list) and mi:
+                        meta_institutions = mi
+
+                vision_data = self.vision.analyze_screenshot(
+                    screenshot_path,
+                    doi=doi,
+                    scout_authors=scout_data.get("authors"),
+                    meta_institutions=meta_institutions,
+                )
+                payload["vision_data"] = vision_data
+                payload["vision_authors"] = vision_data.get("authors", [])
+            else:
+                payload["screenshot_status"] = "BLOCKED_OR_FAILED"
+                payload["vision_authors"] = []
+                payload["vision_data"] = {"text": "", "image_path": None, "authors": []}
+                error_msg = "screenshot_failed"
+
+            self._merge_hover_into_vision(payload)
+
+            confidence = 0.6 if payload.get("screenshot_path") else 0.3
+            return AgentResult(
+                success=True,
+                confidence=confidence,
+                payload=payload,
+                error_msg=error_msg,
+                source="perception",
+            )
+        except Exception as exc:
+            logger.exception("[Orchestrator] Perception failed: %s", exc)
+            return AgentResult(
+                success=False,
+                confidence=0.0,
+                payload=payload,
+                error_msg=str(exc),
+                source="perception",
+            )
+
+    def _run_arbitration_state(self, scout_data: Dict[str, Any], vision_data: Dict[str, Any]) -> AgentResult:
+        """ARBITRATION: run judge matching and fusion."""
+        try:
+            judge_result = self.judge.adjudicate(scout_data, vision_data)
+            if not isinstance(judge_result, dict):
+                return AgentResult(
+                    success=False,
+                    confidence=0.0,
+                    payload={"judge_result": judge_result},
+                    error_msg="judge_invalid_result",
+                    source="judge",
+                )
+            return AgentResult(
+                success=True,
+                confidence=0.85,
+                payload={"judge_result": judge_result},
+                source="judge",
+            )
+        except Exception as exc:
+            logger.exception("[Orchestrator] Judge failed: %s", exc)
+            return AgentResult(
+                success=False,
+                confidence=0.0,
+                payload={"judge_result": None},
+                error_msg=str(exc),
+                source="judge",
+            )
+
+    def _run_evolution_state(
+        self,
+        doi: str,
+        judge_result: Optional[Dict[str, Any]],
+        record: Dict[str, Any],
+        db,
+        processed_in_batch: Set[str],
+        doi_status_map: Dict[str, Dict[str, Any]],
+    ) -> AgentResult:
+        """EVOLUTION: finalize status and persist terminal state."""
+        payload: Dict[str, Any] = {}
+        status = "ERROR"
+        skipped = False
+        error_msg = None
+
+        if isinstance(judge_result, dict):
+            if judge_result.get("status") == "skipped":
+                status = "SKIPPED"
+                skipped = True
+            elif judge_result.get("status") == "needs_review":
+                status = "NEEDS_REVIEW"
+            else:
+                status = "COMPLETED"
+        else:
+            error_msg = "judge_result_missing"
+
+        payload["status"] = status
+        payload["skipped"] = skipped
+        if error_msg:
+            payload["error"] = error_msg
+
+        paper = db.query(Paper).filter(Paper.doi == doi).first()
+        if paper:
+            paper.status = status
+            db.commit()
+
+        processed_in_batch.add(doi)
+        if doi in doi_status_map:
+            doi_status_map[doi]["status"] = status
+
+        return AgentResult(
+            success=True,
+            confidence=0.95,
+            payload=payload,
+            error_msg=error_msg,
+            source="evolution",
+        )
+
     def process_dois(self, dois: List[str]) -> List[Dict]:
         """为一组 DOI 运行完整流水线（高效版本）。
         
@@ -98,312 +442,132 @@ class Orchestrator:
         3️⃣ Vision → 分析截图提取作者信息
         4️⃣ Judge → 身份匹配
         """
-        results = []
+        results: List[Dict[str, Any]] = []
         total = len(dois)
         db = next(get_db())
-        
+
         try:
-            # ⚡ 优化 1：批量查询所有 DOI 状态（只需 1 次数据库查询）
             doi_status_map = self._batch_check_doi_status(dois, db)
-            
-            # 内存缓存跟踪（当前批次中已处理过的 DOI）
             processed_in_batch: Set[str] = set()
-            
+
             for index, doi in enumerate(dois, start=1):
                 doi = doi.strip()
-                record: Dict = {"doi": doi}
+                record: Dict[str, Any] = {"doi": doi}
+
                 try:
-                    print(f"\n{'='*80}")
-                    print(f"[Orchestrator] 处理 {index}/{total}: {doi}")
-                    print(f"{'='*80}")
-                    
-                    # ⚡ 优化 2/3：使用内存缓存查询（不查数据库）
+                    logger.info("[Orchestrator] Processing %s/%s: %s", index, total, doi)
                     status_info = doi_status_map.get(doi)
 
-                    force_reprocess = self._env_truthy("FORCE_REPROCESS", default="0")
-                    
-                    # 情况 1：论文已完成/已跳过/待复核 → 直接返回缓存结果
-                    if (not force_reprocess) and status_info and status_info.get('status') in {'COMPLETED', 'SKIPPED', 'NEEDS_REVIEW'}:
-                        print(f"\n[去重] ✅ 该论文已处理过（{status_info.get('created_at')}）")
-                        print(f"      标题: {status_info.get('title')}")
-                        
-                        # 从数据库读取已有的作者匹配结果
-                        authors = db.query(PaperAuthor).filter(
-                            PaperAuthor.paper_doi == doi
-                        ).all()
-                        
-                        record.update({
-                            "title": status_info.get('title'),
-                            "status": status_info.get('status'),
-                            "matched_authors": len([a for a in authors if a.matched_faculty_id]),
-                            "total_authors": len(authors),
-                            "skipped": True
-                        })
-                        
-                        results.append(record)
-                        processed_in_batch.add(doi)
-                        continue
-                    
-                    # 情况 2：论文正在处理 → 提示稍后重试
-                    elif (not force_reprocess) and status_info and status_info.get('status') == 'PROCESSING':
-                        print(f"\n[去重] ⚠️ 该论文正在处理中，请稍后重试")
-                        record["status"] = "PROCESSING"
-                        record["skipped"] = True
-                        results.append(record)
-                        processed_in_batch.add(doi)
-                        continue
-                    
-                    # 情况 3：本批次中已处理过 → 使用批次内缓存结果
                     if doi in processed_in_batch:
-                        print(f"\n[去重] ✅ 本批次中已处理过，使用缓存结果")
-                        prev_result = next((r for r in results if r['doi'] == doi), None)
+                        prev_result = next((r for r in results if r["doi"] == doi), None)
                         if prev_result:
                             record.update(prev_result)
                             record["cached_from_batch"] = True
                         results.append(record)
                         continue
-                    
-                    # 情况 4：新论文 → 执行完整流程
-                    # 标记为 PROCESSING（防止并发）
-                    if not status_info.get('exists'):
-                        paper = Paper(doi=doi, status="PROCESSING")
-                        db.add(paper)
-                        db.commit()
-                    else:
-                        paper = db.query(Paper).filter(Paper.doi == doi).first()
-                        if paper:
-                            paper.status = "PROCESSING"
-                            db.commit()
-                    
-                    # 1️⃣ Scout Agent：从 Crossref 获取元数据和作者
-                    print(f"\n[步骤 1/4] 🕵️ Scout Agent - 获取元数据...")
-                    scout_data = self.scout.run(doi)
-                    record.update(scout_data)
-                    # 便于排查 403：记录 Scout 提供的落地页 URL
-                    if scout_data.get('landing_page_url'):
-                        record['landing_page_url'] = scout_data.get('landing_page_url')
-                    print(f"[Scout] ✅ 获取了元数据，包含 {len(scout_data.get('authors', []))} 位 Crossref 作者")
-                    
-                    # 更新 Paper 记录
-                    paper = db.query(Paper).filter(Paper.doi == doi).first()
-                    if paper:
-                        paper.title = scout_data.get('title', '')
-                        paper.journal = scout_data.get('journal', '')
-                        paper.publish_date = scout_data.get('publish_date', '')
-                        db.commit()
-                    
-                    # 2️⃣ WebDriver：导航并获取截图
-                    print(f"\n[步骤 2/4] 🌐 WebDriver - 获取截图...")
-                    screenshot_path = self.webdriver.get_webpage_screenshot(
-                        doi,
-                        landing_page_url=scout_data.get('landing_page_url')
-                    )
 
-                    # 🆕 2.5️⃣ 页面交互提取（hover 作者详情）
-                    # 说明：很多出版社把作者单位/邮箱放在 hover tooltip 或弹层里，首页并不展示。
-                    # 这是合规的页面交互（不绕过风控）；若页面被拦截，该方法会返回 None。
-                    page_author_data: Any = None
-                    try:
-                        # 环境变量可关闭：PLAYWRIGHT_EXTRACT_AUTHOR_DETAILS=0
-                        if os.getenv('PLAYWRIGHT_EXTRACT_AUTHOR_DETAILS', '1').strip() not in {'0', 'false', 'False', 'no', 'NO'}:
-                            print(f"\n[步骤 2.5/4] 🧾 WebDriver - hover 提取作者单位/邮箱线索...")
-                            page_author_data = self.webdriver.extract_author_hover_data(
+                    state = FSMState.PRE_FLIGHT
+                    scout_data: Dict[str, Any] = {}
+                    judge_result: Optional[Dict[str, Any]] = None
+
+                    while state != FSMState.TERMINATION:
+                        if state == FSMState.PRE_FLIGHT:
+                            preflight = self._run_pre_flight_state(doi, status_info, db)
+                            action = preflight.payload.get("action")
+                            if action == "skip_cached":
+                                record.update(preflight.payload.get("record", {}))
+                                processed_in_batch.add(doi)
+                                state = FSMState.TERMINATION
+                                continue
+                            if action == "skip_processing":
+                                record.update(preflight.payload.get("record", {}))
+                                processed_in_batch.add(doi)
+                                state = FSMState.TERMINATION
+                                continue
+
+                            if status_info and not status_info.get("exists"):
+                                paper = Paper(doi=doi, status="PROCESSING")
+                                db.add(paper)
+                                db.commit()
+                            else:
+                                paper = db.query(Paper).filter(Paper.doi == doi).first()
+                                if paper:
+                                    paper.status = "PROCESSING"
+                                    db.commit()
+
+                            state = FSMState.SCOUTING
+                            continue
+                        if state == FSMState.SCOUTING:
+                            scout_result = self._run_scout_state(doi)
+                            if not scout_result.success:
+                                record["status"] = "ERROR"
+                                record["error"] = scout_result.error_msg or "scout_failed"
+                                record.update(scout_result.payload)
+                                state = FSMState.EVOLUTION
+                                judge_result = None
+                                continue
+
+                            scout_data = scout_result.payload
+                            record.update(scout_data)
+                            if scout_data.get("landing_page_url"):
+                                record["landing_page_url"] = scout_data.get("landing_page_url")
+
+                            paper = db.query(Paper).filter(Paper.doi == doi).first()
+                            if paper:
+                                paper.title = scout_data.get("title", "")
+                                paper.journal = scout_data.get("journal", "")
+                                paper.publish_date = scout_data.get("publish_date", "")
+                                db.commit()
+
+                            state = FSMState.PERCEPTION
+                            continue
+
+                        if state == FSMState.PERCEPTION:
+                            perception_result = self._run_perception_state(doi, scout_data)
+                            record.update(perception_result.payload)
+                            state = FSMState.ARBITRATION
+                            continue
+
+                        if state == FSMState.ARBITRATION:
+                            vision_data = record.get("vision_data") or {}
+                            arbitration_result = self._run_arbitration_state(scout_data, vision_data)
+                            judge_result = arbitration_result.payload.get("judge_result")
+                            record["judge_result"] = judge_result
+                            if not arbitration_result.success:
+                                record["status"] = "ERROR"
+                                record["error"] = arbitration_result.error_msg or "judge_failed"
+                            state = FSMState.EVOLUTION
+                            continue
+
+                        if state == FSMState.EVOLUTION:
+                            evolution_result = self._run_evolution_state(
                                 doi,
-                                landing_page_url=scout_data.get('landing_page_url'),
+                                judge_result,
+                                record,
+                                db,
+                                processed_in_batch,
+                                doi_status_map,
                             )
-                            if page_author_data and isinstance(page_author_data, dict):
-                                record['page_author_data'] = page_author_data
-                                extracted = page_author_data.get('authors') or []
-                                print(f"[WebDriver] ✅ hover 提取到 {len(extracted)} 位作者（可能包含单位/email 线索）")
-                            else:
-                                print(f"[WebDriver] ⏭️ hover 未提取到作者详情（可能站点不支持/结构不匹配）")
-                    except Exception as _:
-                        pass
-                    
-                    if screenshot_path:
-                        record['screenshot_path'] = screenshot_path
-                        
-                        # 3️⃣ Vision Agent：分析截图提取视觉作者信息
-                        print(f"\n[步骤 3/4] 👁️ Vision Agent - 分析截图...")
-                        meta_institutions = None
-                        try:
-                            if isinstance(record.get('page_author_data'), dict):
-                                meta = record['page_author_data'].get('meta') or {}
-                                mi = meta.get('citation_author_institution')
-                                if isinstance(mi, list) and mi:
-                                    meta_institutions = mi
-                        except Exception:
-                            meta_institutions = None
+                            record.update(evolution_result.payload)
+                            state = FSMState.TERMINATION
+                            continue
 
-                        vision_data = self.vision.analyze_screenshot(
-                            screenshot_path,
-                            doi=doi,
-                            scout_authors=scout_data.get('authors'),
-                            meta_institutions=meta_institutions,
-                        )
-                        # 保留完整 vision_data，供 Judge 融合使用
-                        record['vision_data'] = vision_data
-                        
-                        vision_authors = vision_data.get('authors', [])
-                        print(f"[Vision] ✅ 从截图提取了 {len(vision_authors)} 位作者（含视觉标记）")
-                        
-                        record['vision_authors'] = vision_authors
-                    else:
-                        print(f"[WebDriver] ⚠️ 无法获取截图，跳过 Vision 分析")
-                        record['screenshot_path'] = None
-                        record['screenshot_status'] = 'BLOCKED_OR_FAILED'
-                        record['vision_authors'] = []
-                        record['vision_data'] = {'text': '', 'image_path': None, 'authors': []}
+                    results.append(record)
 
-                    # 🆕 把 hover 提取的作者信息并入 vision_data（当 OCR 没提取到作者/单位时尤其重要）
-                    try:
-                        if isinstance(record.get('page_author_data'), dict):
-                            hover_authors = record['page_author_data'].get('authors') or []
-                        else:
-                            hover_authors = []
-
-                        if hover_authors:
-                            vdata = record.get('vision_data') or {}
-                            vauthors = vdata.get('authors') or []
-
-                            # 若 OCR 未提取到作者（或作者为空），直接使用 hover authors
-                            if not vauthors:
-                                vdata['authors'] = hover_authors
-                                vdata['text'] = (vdata.get('text') or '')
-                                # 拼接 tooltip 文本给 Judge/调试
-                                raw_tooltips = record['page_author_data'].get('raw_tooltips') or []
-                                tooltip_text = "\n".join([t.get('tooltip', '') for t in raw_tooltips if isinstance(t, dict) and t.get('tooltip')])
-                                if tooltip_text and not vdata['text']:
-                                    vdata['text'] = tooltip_text
-                                vdata['source'] = 'hover'
-                                record['vision_data'] = vdata
-                                record['vision_authors'] = hover_authors
-                                print(f"[Orchestrator] ✅ 使用 hover 作者数据补全 vision_data")
-                            else:
-                                # OCR 已提取作者：将 hover 的通讯/邮箱/单位线索按 name/order 融合进去（不覆盖已有结构）
-                                def _name_key(name: str) -> str:
-                                    if not name:
-                                        return ""
-                                    return "".join(ch for ch in str(name).lower() if ch.isalnum())
-
-                                def _order(a: dict) -> int:
-                                    if not isinstance(a, dict):
-                                        return -1
-                                    for k in ('order', 'position'):
-                                        v = a.get(k)
-                                        if isinstance(v, int):
-                                            return v
-                                    return -1
-
-                                hover_by_name = { _name_key(a.get('name')): a for a in hover_authors if isinstance(a, dict) and a.get('name') }
-                                hover_by_order = { _order(a): a for a in hover_authors if isinstance(a, dict) and _order(a) > 0 }
-
-                                merged = 0
-                                for va in vauthors:
-                                    if not isinstance(va, dict):
-                                        continue
-                                    key = _name_key(va.get('name'))
-                                    ha = hover_by_name.get(key) if key else None
-                                    if ha is None:
-                                        o = _order(va)
-                                        if o > 0:
-                                            ha = hover_by_order.get(o)
-                                    if not ha:
-                                        continue
-
-                                    # 权益标记：OR 合并
-                                    for flag in ('is_corresponding', 'is_co_first'):
-                                        if flag in ha:
-                                            va[flag] = bool(va.get(flag)) or bool(ha.get(flag))
-
-                                    # 单位补全：仅当 Vision 未给出或 Unknown
-                                    v_aff = str(va.get('affiliation') or '').strip()
-                                    h_aff = str(ha.get('affiliation') or '').strip()
-                                    if (not v_aff) or (v_aff.lower() == 'unknown'):
-                                        if h_aff and h_aff.lower() != 'unknown':
-                                            va['affiliation'] = h_aff
-
-                                    # 证据字段（不覆盖已有）
-                                    for k in ('emails', 'has_mail_icon', 'markers', 'source'):
-                                        if k in ha and k not in va:
-                                            va[k] = ha.get(k)
-                                    if va.get('is_corresponding') and not va.get('corresponding_source') and ha.get('is_corresponding'):
-                                        va['corresponding_source'] = 'hover'
-                                    merged += 1
-
-                                if merged:
-                                    vdata['authors'] = vauthors
-                                    record['vision_data'] = vdata
-                                    record['vision_authors'] = vauthors
-                                    print(f"[Orchestrator] ✅ 已将 hover 线索融合进 Vision 作者（{merged} 人）")
-                    except Exception:
-                        pass
-                    
-                    # 4️⃣ Judge Agent：身份匹配与融合
-                    print(f"\n[步骤 4/4] ⚖️ Judge Agent - 身份匹配...")
-                    judge_result = self.judge.adjudicate(scout_data, record.get('vision_data') or {})
-                    record['judge_result'] = judge_result
-
-                    if isinstance(judge_result, dict) and judge_result.get('status') == 'skipped':
-                        print(f"[Judge] ⏭️ 跳过：{judge_result.get('reason', '')}")
-                        record["status"] = "SKIPPED"
-                        record["skipped"] = True
-                        # 如果已创建 paper 记录，将状态标记为 SKIPPED
-                        paper = db.query(Paper).filter(Paper.doi == doi).first()
-                        if paper:
-                            paper.status = "SKIPPED"
-                            db.commit()
-                        results.append(record)
-                        processed_in_batch.add(doi)
-                        continue
-
-                    if isinstance(judge_result, dict) and judge_result.get('status') == 'needs_review':
-                        print(f"[Judge] ⚠️ 需要人工复核（单位命中但未匹配到教师）")
-                        record["status"] = "NEEDS_REVIEW"
-                        record["skipped"] = False
-                        paper = db.query(Paper).filter(Paper.doi == doi).first()
-                        if paper:
-                            paper.status = "NEEDS_REVIEW"
-                            db.commit()
-                        results.append(record)
-                        processed_in_batch.add(doi)
-                        doi_status_map[doi]['status'] = 'NEEDS_REVIEW'
-                        continue
-
-                    print(f"[Judge] ✅ 匹配完成，结果已存储到数据库")
-                    
-                    # ✅ 标记为 COMPLETED
-                    paper = db.query(Paper).filter(Paper.doi == doi).first()
-                    if paper:
-                        paper.status = "COMPLETED"
-                        db.commit()
-                    
-                    record["status"] = "COMPLETED"
-                    record["skipped"] = False
-                    
-                    # 🔄 更新内存缓存
-                    processed_in_batch.add(doi)
-                    doi_status_map[doi]['status'] = 'COMPLETED'
-                
                 except Exception as exc:
-                    print(f"[Orchestrator] ❌ 错误: {exc}")
+                    logger.exception("[Orchestrator] Pipeline error: %s", exc)
                     record["error"] = str(exc)
                     record["status"] = "ERROR"
-                    
-                    # 标记数据库中该论文为错误状态
-                    try:
-                        paper = db.query(Paper).filter(Paper.doi == doi).first()
-                        if paper:
-                            paper.status = "ERROR"
-                            db.commit()
-                    except:
-                        pass
-                
-                results.append(record)
-        
+
+                    paper = db.query(Paper).filter(Paper.doi == doi).first()
+                    if paper:
+                        paper.status = "ERROR"
+                        db.commit()
+
+                    results.append(record)
         finally:
             db.close()
-        
+
         return results
 
     def process_excel(self, excel_file) -> List[Dict]:

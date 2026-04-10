@@ -38,7 +38,7 @@ SQLite 数据库
 |-----|--------|---------|
 | 🗄️ 数据库 | 100% | Faculty / Papers / PaperAuthors |
 | 🕵️ Scout | 83% | Crossref API + OpenAlex 补全（作者单位/落地页） |
-| 👁️ Vision | 67% | 网页截图 OCR + 作者结构化解析（依赖 DeepSeek 配置） |
+| 👁️ Vision | 67% | 网页截图 OCR + 作者结构化解析（本地 OCR + 规则解析） |
 | ⚖️ Judge | 57% | 字符串匹配 + 标记识别 (缺 LLM + 模糊) |
 | 🔄 Orchestrator | 67% | Scout→Vision→Judge 流水线 |
 | 🎨 前端 | 57% | 3 个 Streamlit 页面 (缺预览和审核) |
@@ -46,7 +46,7 @@ SQLite 数据库
 ### 下一步优先级
 
 **🔴 P0** (必须, 3-4 小时内完成)
-- Vision Agent: DeepSeek-VL 集成
+- Vision Agent: 本地 OCR + 规则解析
 - Judge Agent: LLM 模糊匹配
 
 **🟡 P1** (重要, 下周完成)
@@ -151,7 +151,7 @@ streamlit run main.py
 │  ├─ ✅ HTML 支持
 │  ├─ ✅ 图片保存
 │  ├─ ⏳ 自适应切片
-│  └─ ⏳ DeepSeek-VL
+│  └─ ⏳ 视觉 OCR 强化
 └─ ⏳ Judge Agent (4/7)
    ├─ ✅ 字符串匹配
    ├─ ✅ 名字变体生成
@@ -285,7 +285,7 @@ streamlit_run_main.py  # 启动主应用
 
 | 限制 | 影响 | 解决方案 |
 |-----|------|---------|
-| 无 DeepSeek-VL | 无法识别图片中的作者 | 集成 Vision API |
+| 无外部 LLM | 使用本地 OCR + 规则解析 | 已集成 |
 | 无 LLM 匹配 | 模糊名字无法匹配 | 集成 Judge LLM |
 | 串行处理 | 500+ DOI 需要 50+ 秒 | 实现异步处理 |
 | 无中断恢复 | 中途出错要重新开始 | 实现断点续传 |

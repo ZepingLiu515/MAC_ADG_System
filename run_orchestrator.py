@@ -19,6 +19,9 @@ from pathlib import Path
 from typing import List
 
 from backend.orchestrator import Orchestrator
+from backend.utils.schemas import DuplicateStrategy
+from database.connection import get_db
+from database.settings import get_duplicate_strategy, set_duplicate_strategy
 
 
 def _read_dois_from_file(path: Path) -> List[str]:
@@ -58,23 +61,38 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.force:
-        os.environ["FORCE_REPROCESS"] = "1"
+        db = next(get_db())
+        try:
+            prev_strategy = get_duplicate_strategy(db)
+            set_duplicate_strategy(db, DuplicateStrategy.OVERWRITE)
+        finally:
+            db.close()
+    else:
+        prev_strategy = None
 
     orchestrator = Orchestrator()
 
-    if args.excel:
-        results = orchestrator.process_excel(args.excel)
-    else:
-        dois: List[str] = []
-        if args.doi_file:
-            dois.extend(_read_dois_from_file(Path(args.doi_file)))
-        if args.doi:
-            dois.extend([d.strip() for d in args.doi if d and d.strip()])
+    try:
+        if args.excel:
+            results = orchestrator.process_excel(args.excel)
+        else:
+            dois: List[str] = []
+            if args.doi_file:
+                dois.extend(_read_dois_from_file(Path(args.doi_file)))
+            if args.doi:
+                dois.extend([d.strip() for d in args.doi if d and d.strip()])
 
-        if not dois:
-            dois = ["10.1038/s41586-020-2649-2"]
+            if not dois:
+                dois = ["10.1038/s41586-020-2649-2"]
 
-        results = orchestrator.process_dois(dois)
+            results = orchestrator.process_dois(dois)
+    finally:
+        if prev_strategy is not None:
+            db = next(get_db())
+            try:
+                set_duplicate_strategy(db, prev_strategy)
+            finally:
+                db.close()
 
     # 默认只输出“最终作者结果”，避免把完整调试包刷屏。
     # 优先使用 Vision/hover 融合后的 vision_authors；否则退回 authors。

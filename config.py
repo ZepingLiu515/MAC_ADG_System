@@ -27,16 +27,9 @@ HEADERS = {
     "mailto": "researcher@university.edu.cn"
 }
 
-# =================================================================
-# DeepSeek VLM API 配置
-# =================================================================
 from dotenv import load_dotenv
 
 load_dotenv()
-
-DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
-DEEPSEEK_MODEL = os.getenv('DEEPSEEK_MODEL', 'deepseek-vl')
-DEEPSEEK_BASE_URL = os.getenv('DEEPSEEK_BASE_URL', 'https://api.deepseek.com/v1')
 
 # Crossref API 配置
 CROSSREF_TIMEOUT = int(os.getenv('CROSSREF_TIMEOUT', '30'))

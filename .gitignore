@@ -18,3 +18,7 @@ __pycache__/
 # 日志
 logs/
 *.log
+
+.env
+*.env
+.DS_Store

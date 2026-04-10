@@ -13,8 +13,8 @@
 - ✅ 前端 UI (57%) - Streamlit 页面框架
 
 ### ⏳ 待实现 (Critical Path)
-- ⏳ **3.3.6** - DeepSeek-VL 视觉识别（优先）
-- ⏳ **3.4.6** - LLM 驱动的匹配（优先）
+- ⏳ **3.3.6** - 视觉 OCR 强化（优先）
+- ⏳ **3.4.6** - 模糊匹配与身份融合优化（优先）
 - ⏳ **3.4.5** - 模糊匹配算法 (Levenshtein)
 - ⏳ **3.6.5, 3.6.6** - PDF 预览、审核面板
 
@@ -113,22 +113,20 @@ streamlit run main.py
 
 ## 🎯 下一步开发优先级
 
-### 🔴 Phase 4: LLM 集成 (最关键)
+### 🔴 Phase 4: 规则增强与OCR强化 (最关键)
 
-这两个功能是系统的核心难点，**必须**依赖 DeepSeek API：
-
-#### **4.1 Vision Agent 增强** - DeepSeek-VL 集成
-- **功能**: 从 PDF 图片中智能识别作者列表和特殊标记
+#### **4.1 Vision Agent 增强** - 视觉 OCR 强化
+- **功能**: 提升作者列表和角标标记识别准确率
 - **文件**: `backend/agents/vision_agent.py`
 - **优先级**: 🔴 **P0** (高度优先)
 - **预估工作量**: 2-3 小时
 
 **实现步骤**:
-1. 添加图片切片函数 (定位作者栏)
-2. 调用 DeepSeek-VL 识别作者名和标记 (* #)
+1. 优化图片切片函数 (定位作者栏)
+2. 提升角标与脚注识别鲁棒性
 3. 返回结构化的作者列表
 
-#### **4.2 Judge Agent 增强** - LLM 模糊匹配
+#### **4.2 Judge Agent 增强** - 模糊匹配优化
 - **功能**: 处理"Z.P. Liu" vs "Zeping Liu"这样的模糊匹配
 - **文件**: `backend/agents/judge_agent.py`
 - **优先级**: 🔴 **P0** (高度优先)
@@ -136,8 +134,8 @@ streamlit run main.py
 
 **实现步骤**:
 1. 集成 Levenshtein 距离算法
-2. 实现 LLM Prompt 用于疑难匹配
-3. 实现贝叶斯冲突消解逻辑
+2. 规则化疑难匹配流程
+3. 实现冲突消解逻辑
 
 ---
 
@@ -168,62 +166,12 @@ streamlit run main.py
 
 ## 💡 关键代码模板
 
-### 如何集成 DeepSeek API (Vision Agent)
+### 如何增强 OCR 角标识别 (Vision Agent)
 
 ```python
-# 在 backend/agents/vision_agent.py 中添加
-
-def _call_deepseek_vlm(self, image_path: str) -> dict:
-    """调用 DeepSeek-VL 识别作者信息"""
-    import base64
-    import requests
-    import os
-    
-    # 读取图片
-    with open(image_path, "rb") as f:
-        image_data = base64.b64encode(f.read()).decode()
-    
-    api_key = os.getenv("DEEPSEEK_API_KEY")
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}"
-    }
-    
-    payload = {
-        "model": "deepseek-vl-7b-chat",
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": f"data:image/png;base64,{image_data}"}
-                    },
-                    {
-                        "type": "text",
-                        "text": """请识别图片中的作者列表。
-                                  注意：名字右上角的 * 代表通讯作者，# 代表共同一作。
-                                  返回 JSON 格式: {"authors": [{"name": "...", "is_corresponding": bool, "is_co_first": bool}, ...]}"""
-                    }
-                ]
-            }
-        ]
-    }
-    
-    response = requests.post(
-        "https://api.deepseek.com/v1/chat/completions",
-        headers=headers,
-        json=payload,
-        timeout=30
-    )
-    
-    if response.status_code == 200:
-        result = response.json()
-        text = result["choices"][0]["message"]["content"]
-        # 解析 JSON 返回
-        return json.loads(text)
-    else:
-        raise Exception(f"DeepSeek API 错误: {response.status_code}")
+# 在 backend/agents/vision_agent.py 中优化 OCR/ROI 切片逻辑
+# 目标：提升作者列表与角标的稳定识别率
+# 示例：对作者块进行 ROI 切片后再 OCR
 ```
 
 ### 如何集成模糊匹配 (Judge Agent)
@@ -287,14 +235,6 @@ python force_init_db.py
 - 开启可视化调试：`$env:PLAYWRIGHT_HEADLESS="0"`
 - 若仍 403：这通常是网络出口/IP 信誉问题，需要更换合规出口或使用允许的代理（见开发手册）
 
-### 问题: "DeepSeek API 返回 401"
-**解决**: 
-```bash
-# 检查 API Key
-type .env
-# 或新建 .env 文件并设置正确的 Key
-```
-
 ### 问题: "还没导入教师/单位库，测试时论文被跳过"
 **说明**: 现在 Judge 在检测到 `Faculty` 表为空时，会进入“测试模式”：不再直接跳过论文，而是把作者落库并把论文标记为 `NEEDS_REVIEW`，方便你验证主链路（作者/单位/通讯/共一）。
 
@@ -337,8 +277,8 @@ print(f'Faculty: {db.query(Faculty).count()}')
 | 数据库初始化 | 1 分钟 | P0 |
 | 单元测试 | 15-20 分钟 | P0 |
 | Streamlit UI 测试 | 10 分钟 | P0 |
-| DeepSeek 集成 (Vision) | 2-3 小时 | P0 |
-| DeepSeek 集成 (Judge) | 2-3 小时 | P0 |
+| 视觉 OCR 强化 | 2-3 小时 | P0 |
+| 身份融合优化 | 2-3 小时 | P0 |
 | 模糊匹配算法 | 1-2 小时 | P1 |
 | 前端优化 (PDF 预览、审核) | 3-4 小时 | P1 |
 | **总估计** | **12-16 小时** | - |
@@ -355,9 +295,7 @@ python test_complete_pipeline.py
 streamlit run main.py
 ```
 
-👉 **想要完全功能**，需要集成 DeepSeek API：
-- 获取 API Key: https://platform.deepseek.com/
-- 在 `.env` 文件中配置
-- 按照上面的代码模板在 Vision 和 Judge Agent 中集成
+👉 **想要完全功能**：
+- 按上述 OCR 强化与匹配优化路径继续迭代
 
 祝您开发顺利！ 🎉

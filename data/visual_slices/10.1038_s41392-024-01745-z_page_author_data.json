@@ -1,0 +1,91 @@
+{
+  "doi": "10.1038/s41392-024-01745-z",
+  "final_url": "https://www.nature.com/articles/s41392-024-01745-z",
+  "authors": [
+    {
+      "name": "Huang, Yujing",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 1,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Guo, Xiaohan",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 2,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Wu, Yi",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 3,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Chen, Xingyu",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 4,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Feng, Lixiang",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 5,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Xie, Na",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 6,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Shen, Guobo",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 7,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    }
+  ],
+  "raw_tooltips": [],
+  "meta": {
+    "citation_author": [
+      "Huang, Yujing",
+      "Guo, Xiaohan",
+      "Wu, Yi",
+      "Chen, Xingyu",
+      "Feng, Lixiang",
+      "Xie, Na",
+      "Shen, Guobo"
+    ],
+    "citation_author_institution": [
+      "Department of Biotherapy, Cancer Center and State Key Laboratory of Biotherapy, West China Hospital, and West China School of Basic Medical Sciences and Forensic Medicine, Sichuan University, and Collaborative Innovation Center for Biotherapy, Chengdu, China",
+      "Department of Biotherapy, Cancer Center and State Key Laboratory of Biotherapy, West China Hospital, and West China School of Basic Medical Sciences and Forensic Medicine, Sichuan University, and Collaborative Innovation Center for Biotherapy, Chengdu, China",
+      "Department of Biotherapy, Cancer Center and State Key Laboratory of Biotherapy, West China Hospital, and West China School of Basic Medical Sciences and Forensic Medicine, Sichuan University, and Collaborative Innovation Center for Biotherapy, Chengdu, China",
+      "Department of Biotherapy, Cancer Center and State Key Laboratory of Biotherapy, West China Hospital, and West China School of Basic Medical Sciences and Forensic Medicine, Sichuan University, and Collaborative Innovation Center for Biotherapy, Chengdu, China",
+      "Department of Biotherapy, Cancer Center and State Key Laboratory of Biotherapy, West China Hospital, and West China School of Basic Medical Sciences and Forensic Medicine, Sichuan University, and Collaborative Innovation Center for Biotherapy, Chengdu, China",
+      "Department of Biotherapy, Cancer Center and State Key Laboratory of Biotherapy, West China Hospital, and West China School of Basic Medical Sciences and Forensic Medicine, Sichuan University, and Collaborative Innovation Center for Biotherapy, Chengdu, China",
+      "Department of Biotherapy, Cancer Center and State Key Laboratory of Biotherapy, West China Hospital, and West China School of Basic Medical Sciences and Forensic Medicine, Sichuan University, and Collaborative Innovation Center for Biotherapy, Chengdu, China"
+    ],
+    "citation_author_email": []
+  }
+}

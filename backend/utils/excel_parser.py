@@ -1,30 +1,67 @@
-import pandas as pd
+import hashlib
 import json
 
+import pandas as pd
+
 def parse_faculty_list(uploaded_file):
-    """
-    Function: Parse the Faculty List Excel uploaded by user.
-    Input: Streamlit uploaded file object.
-    Output: List of dictionaries corresponding to the Faculty model.
+    """Parse the Faculty list file (Excel/CSV).
+
+    Required columns: Name, Department
+    Optional column: ID (employee_id). If missing or blank, a fallback ID is generated.
     """
     try:
-        # Read Excel, force ID column to string to preserve leading zeros
-        df = pd.read_excel(uploaded_file, dtype={"ID": str})
+        # Read Excel/CSV, force ID column to string to preserve leading zeros
+        filename = ""
+        if isinstance(uploaded_file, str):
+            filename = uploaded_file.lower()
+        else:
+            filename = str(getattr(uploaded_file, "name", "")).lower()
+
+        if filename.endswith(".csv"):
+            try:
+                df = pd.read_csv(
+                    uploaded_file,
+                    dtype={"ID": str},
+                    encoding="utf-8-sig",
+                    sep=None,
+                    engine="python",
+                )
+            except Exception:
+                df = pd.read_csv(uploaded_file, dtype={"ID": str}, encoding="utf-8-sig")
+        else:
+            df = pd.read_excel(uploaded_file, dtype={"ID": str})
         
         # Standardize column check
-        # NOTE: The Excel file MUST have these English headers
-        required_columns = ["Name", "ID", "Department"]
+        # NOTE: The file MUST have these English headers
+        required_columns = ["Name", "Department"]
         for col in required_columns:
             if col not in df.columns:
-                return None, f"Error: Missing required column '{col}'. Please check the Excel header."
+                return None, f"Error: Missing required column '{col}'. Please check the Excel/CSV header."
+
+        has_id_column = "ID" in df.columns
+        used_ids = set()
 
         faculty_data = []
         
-        for _, row in df.iterrows():
+        for idx, row in df.iterrows():
             # 1. Get basic info
             name_zh = str(row["Name"]).strip()
-            emp_id = str(row["ID"]).strip()
             dept = str(row["Department"]).strip()
+
+            emp_id = ""
+            if has_id_column:
+                emp_id = str(row["ID"]).strip()
+                if emp_id.lower() == "nan":
+                    emp_id = ""
+
+            if not emp_id:
+                base = hashlib.md5(f"{name_zh}|{dept}".encode("utf-8")).hexdigest()[:8]
+                emp_id = f"gen_{base}"
+                suffix = 1
+                while emp_id in used_ids:
+                    emp_id = f"gen_{base}_{suffix}"
+                    suffix += 1
+            used_ids.add(emp_id)
             
             # 2. Generate English name variants (Placeholder for now)
             # e.g. "Liu Zeping" -> ["Zeping Liu", "Z.P. Liu"]

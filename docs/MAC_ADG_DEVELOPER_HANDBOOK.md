@@ -47,7 +47,7 @@ MAC-ADG 不是单纯的文献抓取工具，而是一个面向高校科研管理
 - **Perception（感知）**：
   - `ScoutAgent`：从公开 API 拉取元数据与作者（Crossref；必要时 OpenAlex 补全）
   - `WebDriverAdapter`：页面导航与截图（Playwright）
-  - `VisionAgent`：对截图做 OCR + 结构化解析（DeepSeek OCR + 文本模型解析）
+  - `VisionAgent`：对截图做 OCR + 结构化解析（本地 OCR + 规则解析）
 
 - **Decision（决策）**：
   - `JudgeAgent`：身份匹配、冲突消解、权益融合与置信度评估；只把“与本校相关”的内容落库
@@ -73,7 +73,7 @@ MAC-ADG 不是单纯的文献抓取工具，而是一个面向高校科研管理
 ```
 MAC_ADG_System/
 ├── .env                          # 可选：环境变量（密钥、Playwright参数），建议不入库
-├── config.py                     # 全局配置（路径、HTTP headers、DeepSeek配置等）
+├── config.py                     # 全局配置（路径、HTTP headers 等）
 ├── requirements.txt              # Python 依赖
 ├── run_orchestrator.py           # ✅ Orchestrator-only 入口（推荐批处理/命令行运行）
 ├── main.py                       # Streamlit UI 入口（若使用 UI）
@@ -287,7 +287,7 @@ set PLAYWRIGHT_PROXY_PASSWORD=yyy
 
 - Phase 2：核心智能体 ✅/⏳
   - Scout：Crossref + OpenAlex 补全 ✅（不再负责 PDF 下载）
-  - Vision：截图 OCR + LLM 解析 ✅（DeepSeek 依赖需配置）
+  - Vision：截图 OCR + 规则解析 ✅（无需外部 LLM）
   - Judge：身份匹配与落库 ✅（快速筛选 + 融合权益标记；后续可继续增强）
 
 - Phase 3：业务流程串联 ✅

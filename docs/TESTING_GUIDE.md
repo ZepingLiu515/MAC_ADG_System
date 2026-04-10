@@ -30,13 +30,8 @@ python force_init_db.py
 # ✅ SUCCESS: Database tables created successfully!
 ```
 
-### 必需的 API Keys（可选，用于完整功能）
-```bash
-# 创建 .env 文件
-cat > .env << EOF
-DEEPSEEK_API_KEY=sk_xxxxxxxxxxxx  # 用于 Vision + Judge LLM 功能
-EOF
-```
+### 可选配置
+本项目不依赖外部 LLM 服务，默认使用本地 OCR + 规则解析即可完成主链路。
 
 ---
 

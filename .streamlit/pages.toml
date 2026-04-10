@@ -1,0 +1,19 @@
+[[pages]]
+path = "main.py"
+name = "主页"
+icon = "🏠"
+
+[[pages]]
+path = "frontend/pages/1_Data_Management.py"
+name = "数据管理"
+icon = "📂"
+
+[[pages]]
+path = "frontend/pages/2_Smart_Extraction.py"
+name = "智能提取"
+icon = "🚀"
+
+[[pages]]
+path = "frontend/pages/3_Analytics_Reports.py"
+name = "统计报表"
+icon = "📊"

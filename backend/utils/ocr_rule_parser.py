@@ -419,12 +419,15 @@ class OcrRuleParser:
 
         authors_out: List[Dict[str, Any]] = []
 
+        spans: List[Optional[tuple[int, int]]] = []
         cursor = 0
-        for idx, name in enumerate(author_names, start=1):
+        for name in author_names:
             if not name:
+                spans.append(None)
                 continue
             name_pat = self.normalize_for_match(name)
             if not name_pat:
+                spans.append(None)
                 continue
 
             # 在原始（仅 strip accents）文本中找 span，避免“点号/空格/换行”导致完全找不到。
@@ -435,17 +438,30 @@ class OcrRuleParser:
 
             if m2:
                 cursor = max(cursor, m2.end())
+                spans.append((m2.start(), m2.end()))
+            else:
+                spans.append(None)
+
+        def _next_span(idx: int) -> Optional[tuple[int, int]]:
+            for j in range(idx + 1, len(spans)):
+                if spans[j]:
+                    return spans[j]
+            return None
+
+        for idx, name in enumerate(author_names, start=1):
+            span = spans[idx - 1] if idx - 1 < len(spans) else None
 
             if debug:
-                print(f"[ocr-rule] name={name!r} span={'Y' if m2 else 'N'}")
+                print(f"[ocr-rule] name={name!r} span={'Y' if span else 'N'}")
 
             marker_numbers: List[int] = []
             markers = ""
 
-            if m2:
+            if span:
+                _, span_end = span
                 # 只在“作者所在行”抓角标，避免跨行把机构列表编号（1. 2. 3.）吃进去
-                lb, le = _line_bounds(m2.end())
-                tail = search_text[m2.end() : min(le, m2.end() + 160)]
+                lb, le = _line_bounds(span_end)
+                tail = search_text[span_end : min(le, span_end + 160)]
                 tail = tail.lstrip(" \t")
                 collected: List[str] = []
                 collected_markers: List[str] = []
@@ -480,7 +496,7 @@ class OcrRuleParser:
                 # 兜底：若同一行没抓到（OCR 换行/断字常见），允许跨行再抓一次，
                 # 但遇到机构列表的 "\n12." 这类编号就截断，避免粘连。
                 if not marker_numbers:
-                    tail2 = search_text[m2.end() : m2.end() + 160]
+                    tail2 = search_text[span_end : span_end + 160]
                     cut = re.search(r"\r?\n\s*\d{1,2}\s*[\.\)]\s*", tail2)
                     if cut:
                         tail2 = tail2[: cut.start()]
@@ -506,6 +522,44 @@ class OcrRuleParser:
 
                     if debug:
                         print(f"[ocr-rule]  markers_raw_fallback={''.join(collected2)!r} -> nums={marker_numbers}")
+
+                # 再兜底：使用“当前作者 → 下一作者”的窗口抽取角标
+                if not marker_numbers:
+                    next_span = _next_span(idx - 1)
+                    if next_span:
+                        window = search_text[span_end : next_span[0]]
+                    else:
+                        window = search_text[span_end : span_end + 200]
+                    cut3 = re.search(r"\r?\n\s*\d{1,2}\s*[\.\)]\s*", window)
+                    if cut3:
+                        window = window[: cut3.start()]
+                    window = window.lstrip(" \t\r\n")
+                    collected3: List[str] = []
+                    collected_markers3: List[str] = []
+                    for ch in window:
+                        if ch in {"\r", "\n", "\t"}:
+                            collected3.append(" ")
+                            continue
+                        if ch.isdigit() or ch in {",", ";", " ", "-", "–"}:
+                            collected3.append(ch)
+                        elif ch in {"*", "#", "†", "‡", "✉"}:
+                            collected_markers3.append(ch)
+                        else:
+                            if str(ch).isalpha():
+                                break
+                            break
+
+                    known3 = set(aff_map.keys()) if aff_map else None
+                    marker_numbers = self.split_marker_numbers(
+                        "".join(collected3),
+                        max_aff_num=max_aff_num,
+                        known_aff_nums=known3,
+                        prefer_split_hint=prefer_split_hint,
+                    )
+                    if not markers:
+                        markers = "".join(collected_markers3)
+                    if debug:
+                        print(f"[ocr-rule]  markers_raw_window={''.join(collected3)!r} -> nums={marker_numbers}")
 
             if not marker_numbers:
                 try:

@@ -1,5 +1,5 @@
 """
-测试 Vision Agent V3.0 - OCR + DeepSeek 文本模型集成
+测试 Vision Agent V3.0 - OCR + 规则解析流程
 """
 import os
 import sys
@@ -8,10 +8,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 def test_ocr_vision_agent():
-    """测试 OCR 和 LLM 解析"""
+    """测试 OCR 和规则解析"""
     
     print("\n" + "="*70)
-    print("🧪 Vision Agent V3.0 测试 - OCR + LLM 流程")
+    print("🧪 Vision Agent V3.0 测试 - OCR + 规则解析流程")
     print("="*70)
     
     # 检查依赖
@@ -33,14 +33,7 @@ def test_ocr_vision_agent():
         print("  ⚠️  Playwright 未安装")
         deps.append("playwright")
     
-    try:
-        from config import DEEPSEEK_API_KEY
-        if DEEPSEEK_API_KEY:
-            print("  ✅ DeepSeek API KEY 已配置")
-        else:
-            print("  ⚠️  DeepSeek API KEY 未配置")
-    except:
-        print("  ⚠️  无法加载配置")
+    # 已移除外部 LLM 依赖，不再检查 API Key
     
     if deps:
         print(f"\n📦 建议安装缺失的依赖: pip install {' '.join(deps)}")
@@ -89,8 +82,8 @@ def test_ocr_vision_agent():
                 print(f"  ✅ OCR 成功，提取了 {len(ocr_text)} 字符")
                 print(f"     文本预览: {ocr_text[:100]}...")
                 
-                # 尝试用 LLM 解析
-                print(f"\n  🤖 使用 DeepSeek 解析作者信息...")
+                # 使用规则解析
+                print(f"\n  🧩 使用规则解析作者信息...")
                 authors = vision._parse_authors_from_text(ocr_text, "10.test/demo")
                 if authors:
                     print(f"  ✅ 识别了 {len(authors)} 名作者:")
@@ -106,7 +99,7 @@ def test_ocr_vision_agent():
     print("\n" + "="*70)
     print("✅ 测试完成！")
     print("\n📋 总结：")
-    print("  - Vision Agent V3.0 已集成 OCR + LLM 流程")
+    print("  - Vision Agent V3.0 已集成 OCR + 规则解析流程")
     print("  - 支持真实作者识别和排序提取")
     print("  - 当 OCR 不可用时，仅对指定论文返回 mock 数据")
     print("="*70 + "\n")

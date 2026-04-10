@@ -1,0 +1,108 @@
+{
+  "doi": "10.1038/s41746-024-01029-4",
+  "final_url": "https://www.nature.com/articles/s41746-024-01029-4",
+  "authors": [
+    {
+      "name": "Wang, Li",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 1,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Chen, Xi",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 2,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Deng, XiangWen",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 3,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Wen, Hao",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 4,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "You, MingKe",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 5,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Liu, WeiZhi",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 6,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Li, Qi",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 7,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Li, Jian",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 8,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    }
+  ],
+  "raw_tooltips": [],
+  "meta": {
+    "citation_author": [
+      "Wang, Li",
+      "Chen, Xi",
+      "Deng, XiangWen",
+      "Wen, Hao",
+      "You, MingKe",
+      "Liu, WeiZhi",
+      "Li, Qi",
+      "Li, Jian"
+    ],
+    "citation_author_institution": [
+      "Sports Medicine Center, West China Hospital, Sichuan University, Chengdu, China",
+      "Department of Orthopedics and Orthopedic Research Institute, West China Hospital, Sichuan University, Chengdu, China",
+      "Sports Medicine Center, West China Hospital, Sichuan University, Chengdu, China",
+      "Department of Orthopedics and Orthopedic Research Institute, West China Hospital, Sichuan University, Chengdu, China",
+      "Shenzhen International Graduate School, Tsinghua University, Beijing, China",
+      "Shenzhen International Graduate School, Tsinghua University, Beijing, China",
+      "Sports Medicine Center, West China Hospital, Sichuan University, Chengdu, China",
+      "Department of Orthopedics and Orthopedic Research Institute, West China Hospital, Sichuan University, Chengdu, China",
+      "Sports Medicine Center, West China Hospital, Sichuan University, Chengdu, China",
+      "Department of Orthopedics and Orthopedic Research Institute, West China Hospital, Sichuan University, Chengdu, China",
+      "Sports Medicine Center, West China Hospital, Sichuan University, Chengdu, China",
+      "Department of Orthopedics and Orthopedic Research Institute, West China Hospital, Sichuan University, Chengdu, China",
+      "Sports Medicine Center, West China Hospital, Sichuan University, Chengdu, China",
+      "Department of Orthopedics and Orthopedic Research Institute, West China Hospital, Sichuan University, Chengdu, China"
+    ],
+    "citation_author_email": []
+  }
+}
