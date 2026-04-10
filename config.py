@@ -41,3 +41,17 @@ DEEPSEEK_BASE_URL = os.getenv('DEEPSEEK_BASE_URL', 'https://api.deepseek.com/v1'
 # Crossref API 配置
 CROSSREF_TIMEOUT = int(os.getenv('CROSSREF_TIMEOUT', '30'))
 CROSSREF_RETRIES = int(os.getenv('CROSSREF_RETRIES', '3'))
+
+
+def _parse_csv_env(name: str):
+    raw = os.getenv(name, "")
+    if not raw:
+        return []
+    parts = [p.strip() for p in str(raw).split(",")]
+    return [p for p in parts if p]
+
+
+# 用于 Judge 在“未导入教师/单位库”或“未匹配到 Faculty 时”判断作者是否仍与本校相关。
+# PowerShell 示例：
+#   $env:SCHOOL_AFFILIATION_KEYWORDS="四川大学,Sichuan University,West China"
+SCHOOL_AFFILIATION_KEYWORDS = _parse_csv_env('SCHOOL_AFFILIATION_KEYWORDS')

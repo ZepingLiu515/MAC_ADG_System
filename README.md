@@ -10,12 +10,11 @@
 
 | 需求 | 文档 | 时长 |
 |-----|------|------|
-| 📌 了解项目现状 | [PROJECT_STATUS.md](PROJECT_STATUS.md) | 5 分钟 |
-| 📋 查看完整功能清单 | [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md) | 10 分钟 |
-| 🧪 学习测试方法 | [TESTING_GUIDE.md](TESTING_GUIDE.md) | 15 分钟 |
+| 📚 文档总入口 | [docs/DOCUMENTATION_INDEX.md](docs/DOCUMENTATION_INDEX.md) | 3-5 分钟 |
+| 📋 查看完整功能清单 | [docs/DEVELOPMENT_ROADMAP.md](docs/DEVELOPMENT_ROADMAP.md) | 10 分钟 |
+| 🧪 学习测试方法 | [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md) | 15 分钟 |
 | 🚀 快速开始验证 | [QUICKSTART.md](QUICKSTART.md) | 10 分钟 |
-| 🤖 与 AI 协作开发 | [AI_ASSISTANT_GUIDE.md](AI_ASSISTANT_GUIDE.md) | 20 分钟 |
-| 📊 查看完成报告 | [COMPLETION_REPORT.md](COMPLETION_REPORT.md) | 5 分钟 |
+| 📘 最新版开发手册 | [docs/MAC_ADG_DEVELOPER_HANDBOOK.md](docs/MAC_ADG_DEVELOPER_HANDBOOK.md) | 20-30 分钟 |
 
 ---
 
@@ -26,8 +25,9 @@
 用户界面 (Streamlit)
     ↓
 Orchestrator (流程编排)
-    ├→ Scout Agent (元数据 + PDF 下载)
-    ├→ Vision Agent (文本提取 + 图片处理)
+  ├→ Scout Agent (元数据 + 作者/落地页补全)
+  ├→ WebDriver (网页导航 + 截图)
+  ├→ Vision Agent (截图 OCR + 结构化作者解析)
     └→ Judge Agent (身份匹配 + 数据库保存)
     ↓
 SQLite 数据库
@@ -37,8 +37,8 @@ SQLite 数据库
 | 模块 | 完成度 | 关键功能 |
 |-----|--------|---------|
 | 🗄️ 数据库 | 100% | Faculty / Papers / PaperAuthors |
-| 🕵️ Scout | 83% | Crossref API + Unpaywall + PDF 下载 |
-| 👁️ Vision | 67% | PDF→图 + 文本提取 (缺 DeepSeek) |
+| 🕵️ Scout | 83% | Crossref API + OpenAlex 补全（作者单位/落地页） |
+| 👁️ Vision | 67% | 网页截图 OCR + 作者结构化解析（依赖 DeepSeek 配置） |
 | ⚖️ Judge | 57% | 字符串匹配 + 标记识别 (缺 LLM + 模糊) |
 | 🔄 Orchestrator | 67% | Scout→Vision→Judge 流水线 |
 | 🎨 前端 | 57% | 3 个 Streamlit 页面 (缺预览和审核) |
@@ -71,11 +71,10 @@ python quick_verify.py
 
 ### 2️⃣ 运行测试 (15 分钟)
 ```bash
-python test_scout.py              # Scout Agent
-python test_vision.py             # Vision Agent
-python test_judge.py              # Judge Agent
-python test_orchestrator.py       # Orchestrator
-python test_complete_pipeline.py  # 端到端
+python tests/test_scout.py              # Scout Agent
+python tests/test_vision.py             # Vision Agent
+python tests/test_orchestrator.py       # Orchestrator
+python tests/test_complete_pipeline.py  # 端到端
 ```
 **预期**: 所有测试通过，系统可正常工作
 
@@ -91,7 +90,7 @@ streamlit run main.py
 ### 4️⃣ 阅读指南 (30 分钟)
 根据需求选择：
 - [QUICKSTART.md](QUICKSTART.md) - 快速上手
-- [AI_ASSISTANT_GUIDE.md](AI_ASSISTANT_GUIDE.md) - 继续开发
+- [docs/MAC_ADG_DEVELOPER_HANDBOOK.md](docs/MAC_ADG_DEVELOPER_HANDBOOK.md) - 最新版开发手册（权威）
 
 ---
 
@@ -110,9 +109,9 @@ streamlit run main.py
 **目标**: 将系统完成度从 69% 提升到 95%  
 **时间**: 3-4 小时
 
-1. 阅读 [AI_ASSISTANT_GUIDE.md](AI_ASSISTANT_GUIDE.md)
+1. 阅读 [docs/MAC_ADG_DEVELOPER_HANDBOOK.md](docs/MAC_ADG_DEVELOPER_HANDBOOK.md)
 2. 按优先级实现 9 个功能（可与 AI 协作）
-3. 运行所有测试验证
+3. 运行所有测试验证（见 [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md)）
 
 ### 场景 3: 日常使用
 **目标**: 处理实际的 DOI 列表  
@@ -302,154 +301,26 @@ streamlit_run_main.py  # 启动主应用
 3. 查看错误堆栈，搜索文件名
 
 ### 问题: "测试失败"
-1. 清除缓存: `rm -rf data/pdf_cache/*`
+1. 清除缓存（PowerShell）: `Remove-Item -Recurse -Force data\pdf_cache\* , data\visual_slices\* -ErrorAction SilentlyContinue`
 2. 重新初始化: `python force_init_db.py`
 3. 重新运行测试
 
 ### 问题: "不知道如何继续"
-1. 阅读 [AI_ASSISTANT_GUIDE.md](AI_ASSISTANT_GUIDE.md)
-2. 找到对应的功能编号
-3. 复制功能说明，请 AI 实现
+1. 阅读 [docs/MAC_ADG_DEVELOPER_HANDBOOK.md](docs/MAC_ADG_DEVELOPER_HANDBOOK.md)
+2. 按手册里的“扩展点/状态机/运行参数”推进
 
 ### 问题: "想要快速演示"
 ```bash
 python quick_verify.py      # 验证环境 (5 分钟)
-python test_complete_pipeline.py  # 运行完整流程 (10 分钟)
+python tests/test_complete_pipeline.py  # 运行完整流程 (10 分钟)
 streamlit run main.py       # 启动 UI (立即启动)
 ```
 
 ---
 
-## 📚 推荐阅读顺序
+## 📚 推荐阅读（以最新版为准）
 
-### 👤 为了快速上手 (30 分钟)
-1. 本文件 (5 分钟)
-2. [QUICKSTART.md](QUICKSTART.md) (10 分钟)
-3. 运行测试 (15 分钟)
-
-### 💼 为了完整理解 (1 小时)
-1. [PROJECT_STATUS.md](PROJECT_STATUS.md) (5 分钟)
-2. [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md) (20 分钟)
-3. 本项目中的代码 (20 分钟)
-4. [COMPLETION_REPORT.md](COMPLETION_REPORT.md) (5 分钟)
-
-### 🚀 为了继续开发 (3-4 小时)
-1. [AI_ASSISTANT_GUIDE.md](AI_ASSISTANT_GUIDE.md) (20 分钟)
-2. 按优先级实现 9 个功能
-3. [TESTING_GUIDE.md](TESTING_GUIDE.md) - 验证每个功能
-
----
-
-## 🎓 学习资源
-
-### 官方文档
-- [Streamlit](https://docs.streamlit.io)
-- [SQLAlchemy ORM](https://docs.sqlalchemy.org)
-- [PyMuPDF](https://pymupdf.readthedocs.io)
-- [DeepSeek API](https://platform.deepseek.com/api-docs)
-
-### 代码示例
-- Vision Agent DeepSeek 集成范例 → [QUICKSTART.md](QUICKSTART.md)
-- Judge LLM 模糊匹配范例 → [AI_ASSISTANT_GUIDE.md](AI_ASSISTANT_GUIDE.md)
-
----
-
-## ✨ 下一步行动
-
-### ✅ 今天 (1 小时)
-```bash
-# 验证环境
-python quick_verify.py
-
-# 运行完整流程
-python test_complete_pipeline.py
-
-# 启动 UI
-streamlit run main.py
-```
-
-### ✅ 明天 (3-4 小时)
-参考 [AI_ASSISTANT_GUIDE.md](AI_ASSISTANT_GUIDE.md)：
-1. 功能 2: Vision - DeepSeek-VL (2 小时)
-2. 功能 4: Judge - DeepSeek LLM (2 小时)
-
-### ✅ 后天 (2 小时)
-3. 功能 3: Judge - Levenshtein (1 小时)
-4. 功能 6: 前端 - PDF 预览 (1 小时)
-
----
-
-## 💡 最终建议
-
-1. **今天开始**: `python quick_verify.py` → `streamlit run main.py`
-2. **明天开始**: 集成 DeepSeek (参考 AI_ASSISTANT_GUIDE.md)
-3. **确保每步**: 运行相应的测试脚本验证
-4. **有问题时**: 查看对应的文档或运行诊断脚本
-
----
-
-## 📊 项目里程碑
-
-```
-v0.69 (现在)
-  ✅ 基础功能可用
-  ⏳ 需要 LLM 集成
-  │
-  ↓ [3-4 小时]
-  │
-v0.95 (目标)
-  ✅ LLM 集成完成
-  ✅ 匹配准确度 > 90%
-  ⏳ 还需性能优化
-  │
-  ↓ [2-3 小时, 可选]
-  │
-v1.0 (最终)
-  ✅ 生产就位
-  ✅ 完整功能集
-  ✅ 性能优化完成
-```
-
----
-
-## 📋 快速参考卡
-
-### 常用命令
-```bash
-# 验证环境 (5 分钟)
-python quick_verify.py
-
-# 初始化数据库
-python force_init_db.py
-
-# 运行所有测试 (30 分钟)
-python test_scout.py && python test_vision.py && \
-python test_judge.py && python test_orchestrator.py && \
-python test_complete_pipeline.py
-
-# 启动 UI
-streamlit run main.py
-
-# 清除缓存
-rm -rf data/pdf_cache/* data/visual_slices/*
-```
-
-### 文件导航
-```
-了解现状     → PROJECT_STATUS.md
-快速开始     → QUICKSTART.md
-详细清单     → DEVELOPMENT_ROADMAP.md
-学会测试     → TESTING_GUIDE.md
-继续开发     → AI_ASSISTANT_GUIDE.md
-完成报告     → COMPLETION_REPORT.md
-```
-
----
-
-**祝您开发顺利！** 🚀
-
----
-
-**最后更新**: 2026-03-10  
-**系统版本**: v0.69 (Functional MVP)  
-**文档版本**: v1.0 (Complete)
+- 权威手册（首选）：[docs/MAC_ADG_DEVELOPER_HANDBOOK.md](docs/MAC_ADG_DEVELOPER_HANDBOOK.md)
+- 文档导航入口：[docs/DOCUMENTATION_INDEX.md](docs/DOCUMENTATION_INDEX.md)
+- 快速开始：[QUICKSTART.md](QUICKSTART.md)
+- 测试指南：[docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md)

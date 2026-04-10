@@ -15,7 +15,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.agents.scout_agent import ScoutAgent
-from backend.agents.vision_agent_v2 import VisionAgent
+from backend.agents.vision_agent import VisionAgent
 from backend.agents.judge_agent import JudgeAgent
 from backend.utils.webdriver import WebDriverAdapter
 

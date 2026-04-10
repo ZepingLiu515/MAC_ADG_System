@@ -1,0 +1,158 @@
+{
+  "doi": "10.3934/publichealth.2026005",
+  "final_url": "http://www.aimspress.com/article/doi/10.3934/publichealth.2026005",
+  "authors": [
+    {
+      "name": "Marta Marín-Berges",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 1,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Alejandro Gómez-Bruton",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 2,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Pablo A. Lizana",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 3,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": true,
+      "emails": [
+        "pablo.lizana@pucv.cl"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Maximiliano Cáceres",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 4,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Pía Magaña",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 5,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Isabel Iguacel",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 6,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
+    }
+  ],
+  "raw_tooltips": [
+    {
+      "name": "Marta Marín-Berges",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Alejandro Gómez-Bruton",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Pablo A. Lizana",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": true,
+      "emails": [
+        "pablo.lizana@pucv.cl"
+      ]
+    },
+    {
+      "name": "Maximiliano Cáceres",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Pía Magaña",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Isabel Iguacel",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    }
+  ],
+  "meta": {
+    "citation_author": [
+      "Marta Marín-Berges",
+      "Alejandro Gómez-Bruton",
+      "Pablo A. Lizana",
+      "Maximiliano Cáceres",
+      "Pía Magaña",
+      "Isabel Iguacel",
+      "Marta Marín-Berges",
+      "Alejandro Gómez-Bruton",
+      "Pablo A. Lizana",
+      "Maximiliano Cáceres",
+      "Pía Magaña",
+      "Isabel Iguacel"
+    ],
+    "citation_author_institution": [
+      "IBiOPS, Instituto de Investigación Sanitaria Aragón, Universidad de Zaragoza, Zaragoza, Spain",
+      "Centro de Investigación Biomédica en Red de Fisiopatología de la Obesidad y Nutrición (CIBEROBN), Instituto de Salud Carlos III, Madrid, Spain",
+      "EXER-GENUD (Growth, Exercise, Nutrition and Development), Faculty of Health and Sport Sciences, Huesca, University of Zaragoza, Spain",
+      "Laboratory of Epidemiology and Morphological Sciences, Instituto de Biología, Pontificia Universidad Católica de Valparaíso, Valparaíso 2373223, Chile",
+      "Center for Interdisciplinary Research in Biomedicine, Biotechnology and Well-Being (CID3B), Pontificia Universidad Católica de Valparaíso, Valparaíso, Chile",
+      "Instituto Agroalimentario de Aragón (IA2), Zaragoza, Spain",
+      "NUTRI-GENUD (Growth, Exercise, Nutrition and Development), Faculty of Health Sciences, Zaragoza, University of Zaragoza, Spain"
+    ],
+    "citation_author_email": []
+  }
+}

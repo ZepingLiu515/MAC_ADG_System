@@ -30,13 +30,31 @@ def test_scout():
         print("\n--- Result ---")
         print(json.dumps(result, indent=4))
         
-        # the agent now returns multiple status codes
-        # success_pdf / success_html / metadata_only / error
         print(f"DEBUG: received status={result.get('status')}")
-        if result['status'] in ('success_pdf', 'success_html', 'metadata_only'):
-            print("\n✅ Scout Agent Test Passed (valid status)")
+        if result.get('status') in ('metadata_ready', 'metadata_only', 'success_html', 'success_pdf'):
+            print("\n✅ Scout Agent returned a valid status")
         else:
-            print("\n❌ Scout Agent Test Failed (unexpected status)")
+            print("\n❌ Unexpected status (check network/DOI)")
+
+        authors = result.get('authors') or []
+        if not authors:
+            print("\n⚠️ No authors returned (may be network/API issue)")
+            return
+
+        # Basic schema check
+        assert any((a.get('name') or '').strip() for a in authors if isinstance(a, dict)), "No author names found"
+
+        # OpenAlex fallback: affiliations may still be Unknown for some DOIs, so we only require at least one non-Unknown when possible.
+        non_unknown_aff = [
+            a for a in authors
+            if isinstance(a, dict)
+            and str(a.get('affiliation') or '').strip()
+            and str(a.get('affiliation') or '').strip().lower() != 'unknown'
+        ]
+        if non_unknown_aff:
+            print(f"\n✅ Found {len(non_unknown_aff)} authors with non-Unknown affiliation (OpenAlex/crossref)")
+        else:
+            print("\n⚠️ All affiliations are Unknown (some records truly lack affiliations)")
             
     except Exception as e:
         print(f"DEBUG: Runtime Error! {e}")

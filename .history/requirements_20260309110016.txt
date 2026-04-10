@@ -1,9 +1,0 @@
-streamlit
-sqlalchemy
-pandas
-openpyxl
-requests
-pymupdf
-openai
-python-dotenv
-watchdog

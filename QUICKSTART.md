@@ -279,18 +279,28 @@ pip install streamlit
 python force_init_db.py
 ```
 
-### 问题: "PDF 下载失败"
-**解决**: 
-- 检查网络连接
-- DOI 可能无效或不支持免费全文
-- 清除缓存重试: `rm -rf data/pdf_cache/*`
+### 问题: "网页截图失败 / 403 / 风控拦截"
+**说明**: 当前主流程是 WebDriver 截图 → Vision 解析，不依赖 PDF 下载。
+
+**解决**:
+- 尝试使用系统 Chrome：`$env:PLAYWRIGHT_CHANNEL="chrome"`
+- 开启可视化调试：`$env:PLAYWRIGHT_HEADLESS="0"`
+- 若仍 403：这通常是网络出口/IP 信誉问题，需要更换合规出口或使用允许的代理（见开发手册）
 
 ### 问题: "DeepSeek API 返回 401"
 **解决**: 
 ```bash
 # 检查 API Key
-cat .env
+type .env
 # 或新建 .env 文件并设置正确的 Key
+```
+
+### 问题: "还没导入教师/单位库，测试时论文被跳过"
+**说明**: 现在 Judge 在检测到 `Faculty` 表为空时，会进入“测试模式”：不再直接跳过论文，而是把作者落库并把论文标记为 `NEEDS_REVIEW`，方便你验证主链路（作者/单位/通讯/共一）。
+
+**建议配置**（用于“先匹配单位再看作者姓名”）：
+```bash
+$env:SCHOOL_AFFILIATION_KEYWORDS="四川大学,Sichuan University,West China"
 ```
 
 ---
@@ -298,13 +308,14 @@ cat .env
 ## 📞 获得帮助
 
 ### 常见问题查看
-- 查看 [TESTING_GUIDE.md](TESTING_GUIDE.md) 了解详细的测试方法
-- 查看 [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md) 了解整体规划
+- 查看 [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md) 了解详细的测试方法
+- 查看 [docs/DEVELOPMENT_ROADMAP.md](docs/DEVELOPMENT_ROADMAP.md) 了解整体规划
+- 查看 [docs/MAC_ADG_DEVELOPER_HANDBOOK.md](docs/MAC_ADG_DEVELOPER_HANDBOOK.md) 了解最新架构与运行参数
 
 ### 调试技巧
 ```bash
 # 启用详细输出
-export PYTHONUNBUFFERED=1
+$env:PYTHONUNBUFFERED="1"
 
 # 查看数据库内容
 python -c "

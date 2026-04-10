@@ -10,5 +10,5 @@ watchdog
 playwright>=1.40.0
 playwright-stealth>=1.0.1  # 反爬虫检测
 pillow>=10.0.0
-paddleocr>=2.7.0  # 中英文 OCR 识别
-paddlepaddle>=2.5.0  # PaddleOCR 依赖
+paddleocr=3.4.0  # 中英文 OCR 识别
+paddlepaddle=3.0.0  # PaddleOCR 依赖

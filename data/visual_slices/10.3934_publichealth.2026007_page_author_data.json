@@ -1,0 +1,221 @@
+{
+  "doi": "10.3934/publichealth.2026007",
+  "final_url": "http://www.aimspress.com/article/doi/10.3934/publichealth.2026007",
+  "authors": [
+    {
+      "name": "Sadia Akter",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 1,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Farkhanda Mahjebin",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 2,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Mohammad Delwer Hossain Hawlader",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 3,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Md Moshiur Rahman",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 4,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Sanmei Chen",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 5,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Saori Kashima",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 6,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Sheuly Akter",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 7,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Shamit Dasgupta",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 8,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Yoko Shimpuku",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 9,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
+    }
+  ],
+  "raw_tooltips": [
+    {
+      "name": "Sadia Akter",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Farkhanda Mahjebin",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Mohammad Delwer Hossain Hawlader",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Md Moshiur Rahman",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Sanmei Chen",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Saori Kashima",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Sheuly Akter",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Shamit Dasgupta",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Yoko Shimpuku",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    }
+  ],
+  "meta": {
+    "citation_author": [
+      "Sadia Akter",
+      "Farkhanda Mahjebin",
+      "Mohammad Delwer Hossain Hawlader",
+      "Md Moshiur Rahman",
+      "Sanmei Chen",
+      "Saori Kashima",
+      "Sheuly Akter",
+      "Shamit Dasgupta",
+      "Yoko Shimpuku",
+      "Sadia Akter",
+      "Farkhanda Mahjebin",
+      "Mohammad Delwer Hossain Hawlader",
+      "Md Moshiur Rahman",
+      "Sanmei Chen",
+      "Saori Kashima",
+      "Sheuly Akter",
+      "Shamit Dasgupta",
+      "Yoko Shimpuku"
+    ],
+    "citation_author_institution": [
+      "Graduate School of Innovation and Practice for Smart Society, Hiroshima University, Japan",
+      "Khwaja Yunus Ali Medical College and Hospital, Bangladesh",
+      "Department of Public Health, North South University, Bangladesh",
+      "NSU Global Health Institute (NGHI), North South University, Dhaka 1229, Bangladesh",
+      "Graduate School of Biomedical and Health Sciences, Hiroshima University, Japan",
+      "Center for the Planetary Health and Innovation Science, The IDEC Institute, Hiroshima University, Japan",
+      "Environmental Health Sciences Laboratory, Graduate School of Advanced Science and Engineering, Hiroshima University, Japan",
+      "Ministry of Health, Government of British Columbia, Canada"
+    ],
+    "citation_author_email": []
+  }
+}

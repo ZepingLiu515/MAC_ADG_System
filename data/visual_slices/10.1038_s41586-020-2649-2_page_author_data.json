@@ -1,0 +1,581 @@
+{
+  "doi": "10.1038/s41586-020-2649-2",
+  "final_url": "https://www.nature.com/articles/s41586-020-2649-2",
+  "authors": [
+    {
+      "name": "Charles R. Harris",
+      "affiliation": "Independent researcher, Logan, USA",
+      "position": 1,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "K. Jarrod Millman",
+      "affiliation": "Brain Imaging Center, University of California, Berkeley, Berkeley, USA",
+      "position": 2,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Stéfan J. van der Walt",
+      "affiliation": "Division of Biostatistics, University of California, Berkeley, Berkeley, USA",
+      "position": 3,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Ralf Gommers",
+      "affiliation": "Berkeley Institute for Data Science, University of California, Berkeley, Berkeley, USA",
+      "position": 4,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Pauli Virtanen",
+      "affiliation": "Brain Imaging Center, University of California, Berkeley, Berkeley, USA",
+      "position": 5,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "David Cournapeau",
+      "affiliation": "Berkeley Institute for Data Science, University of California, Berkeley, Berkeley, USA",
+      "position": 6,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Eric Wieser",
+      "affiliation": "Applied Mathematics, Stellenbosch University, Stellenbosch, South Africa",
+      "position": 7,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Julian Taylor",
+      "affiliation": "Quansight, Austin, USA",
+      "position": 8,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Sebastian Berg",
+      "affiliation": "Department of Physics, University of Jyväskylä, Jyväskylä, Finland",
+      "position": 9,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Nathaniel J. Smith",
+      "affiliation": "Nanoscience Center, University of Jyväskylä, Jyväskylä, Finland",
+      "position": 10,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Robert Kern",
+      "affiliation": "Mercari JP, Tokyo, Japan",
+      "position": 11,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Matti Picus",
+      "affiliation": "Department of Engineering, University of Cambridge, Cambridge, UK",
+      "position": 12,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Stephan Hoyer",
+      "affiliation": "Independent researcher, Karlsruhe, Germany",
+      "position": 13,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Marten H. van Kerkwijk",
+      "affiliation": "Berkeley Institute for Data Science, University of California, Berkeley, Berkeley, USA",
+      "position": 14,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Matthew Brett",
+      "affiliation": "Independent researcher, Berkeley, USA",
+      "position": 15,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Allan Haldane",
+      "affiliation": "Enthought, Austin, USA",
+      "position": 16,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Jaime Fernández del Río",
+      "affiliation": "Berkeley Institute for Data Science, University of California, Berkeley, Berkeley, USA",
+      "position": 17,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Mark Wiebe",
+      "affiliation": "Google Research, Mountain View, USA",
+      "position": 18,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Pearu Peterson",
+      "affiliation": "Department of Astronomy and Astrophysics, University of Toronto, Toronto, Canada",
+      "position": 19,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Pierre Gérard-Marchant",
+      "affiliation": "Brain Imaging Center, University of California, Berkeley, Berkeley, USA",
+      "position": 20,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Kevin Sheppard",
+      "affiliation": "School of Psychology, University of Birmingham, Edgbaston, UK",
+      "position": 21,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Tyler Reddy",
+      "affiliation": "Department of Physics, Temple University, Philadelphia, USA",
+      "position": 22,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Warren Weckesser",
+      "affiliation": "Google, Zurich, Switzerland",
+      "position": 23,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Hameer Abbasi",
+      "affiliation": "Department of Physics and Astronomy, The University of British Columbia, Vancouver, Canada",
+      "position": 24,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Christoph Gohlke",
+      "affiliation": "Amazon, Seattle, USA",
+      "position": 25,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "Travis E. Oliphant",
+      "affiliation": "Quansight, Austin, USA",
+      "position": 26,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "ORCID: orcid.org/0000-0002-5263-5070",
+      "affiliation": "Independent researcher, Saue, Estonia",
+      "position": 27,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    },
+    {
+      "name": "ORCID: orcid.org/0000-0001-9276-1891",
+      "affiliation": "Department of Mechanics and Applied Mathematics, Institute of Cybernetics at Tallinn Technical University, Tallinn, Estonia",
+      "position": 28,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "hover"
+    }
+  ],
+  "raw_tooltips": [
+    {
+      "name": "Charles R. Harris",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "K. Jarrod Millman",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Stéfan J. van der Walt",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Ralf Gommers",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Pauli Virtanen",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "David Cournapeau",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Eric Wieser",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Julian Taylor",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Sebastian Berg",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Nathaniel J. Smith",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Robert Kern",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Matti Picus",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Stephan Hoyer",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Marten H. van Kerkwijk",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Matthew Brett",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Allan Haldane",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Jaime Fernández del Río",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Mark Wiebe",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Pearu Peterson",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Pierre Gérard-Marchant",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Kevin Sheppard",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Tyler Reddy",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Warren Weckesser",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Hameer Abbasi",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Christoph Gohlke",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Travis E. Oliphant",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "ORCID: orcid.org/0000-0002-5263-5070",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "ORCID: orcid.org/0000-0001-9276-1891",
+      "tooltip": "",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    }
+  ],
+  "meta": {
+    "citation_author": [
+      "Harris, Charles R.",
+      "Millman, K. Jarrod",
+      "van der Walt, Stéfan J.",
+      "Gommers, Ralf",
+      "Virtanen, Pauli",
+      "Cournapeau, David",
+      "Wieser, Eric",
+      "Taylor, Julian",
+      "Berg, Sebastian",
+      "Smith, Nathaniel J.",
+      "Kern, Robert",
+      "Picus, Matti",
+      "Hoyer, Stephan",
+      "van Kerkwijk, Marten H.",
+      "Brett, Matthew",
+      "Haldane, Allan",
+      "del Río, Jaime Fernández",
+      "Wiebe, Mark",
+      "Peterson, Pearu",
+      "Gérard-Marchant, Pierre",
+      "Sheppard, Kevin",
+      "Reddy, Tyler",
+      "Weckesser, Warren",
+      "Abbasi, Hameer",
+      "Gohlke, Christoph",
+      "Oliphant, Travis E."
+    ],
+    "citation_author_institution": [
+      "Independent researcher, Logan, USA",
+      "Brain Imaging Center, University of California, Berkeley, Berkeley, USA",
+      "Division of Biostatistics, University of California, Berkeley, Berkeley, USA",
+      "Berkeley Institute for Data Science, University of California, Berkeley, Berkeley, USA",
+      "Brain Imaging Center, University of California, Berkeley, Berkeley, USA",
+      "Berkeley Institute for Data Science, University of California, Berkeley, Berkeley, USA",
+      "Applied Mathematics, Stellenbosch University, Stellenbosch, South Africa",
+      "Quansight, Austin, USA",
+      "Department of Physics, University of Jyväskylä, Jyväskylä, Finland",
+      "Nanoscience Center, University of Jyväskylä, Jyväskylä, Finland",
+      "Mercari JP, Tokyo, Japan",
+      "Department of Engineering, University of Cambridge, Cambridge, UK",
+      "Independent researcher, Karlsruhe, Germany",
+      "Berkeley Institute for Data Science, University of California, Berkeley, Berkeley, USA",
+      "Independent researcher, Berkeley, USA",
+      "Enthought, Austin, USA",
+      "Berkeley Institute for Data Science, University of California, Berkeley, Berkeley, USA",
+      "Google Research, Mountain View, USA",
+      "Department of Astronomy and Astrophysics, University of Toronto, Toronto, Canada",
+      "Brain Imaging Center, University of California, Berkeley, Berkeley, USA",
+      "School of Psychology, University of Birmingham, Edgbaston, UK",
+      "Department of Physics, Temple University, Philadelphia, USA",
+      "Google, Zurich, Switzerland",
+      "Department of Physics and Astronomy, The University of British Columbia, Vancouver, Canada",
+      "Amazon, Seattle, USA",
+      "Quansight, Austin, USA",
+      "Independent researcher, Saue, Estonia",
+      "Department of Mechanics and Applied Mathematics, Institute of Cybernetics at Tallinn Technical University, Tallinn, Estonia",
+      "Department of Biological and Agricultural Engineering, University of Georgia, Athens, USA",
+      "France-IX Services, Paris, France",
+      "Department of Economics, University of Oxford, Oxford, UK",
+      "CCS-7, Los Alamos National Laboratory, Los Alamos, USA",
+      "Berkeley Institute for Data Science, University of California, Berkeley, Berkeley, USA",
+      "Quansight, Austin, USA",
+      "Laboratory for Fluorescence Dynamics, Biomedical Engineering Department, University of California, Irvine, Irvine, USA",
+      "Quansight, Austin, USA"
+    ],
+    "citation_author_email": []
+  }
+}

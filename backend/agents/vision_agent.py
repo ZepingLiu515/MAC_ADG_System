@@ -1,44 +1,59 @@
 import os
-import time
 import base64
 import requests
 import json
+from typing import Any, Dict, List, Optional
+import re
 
-# playwright 在某些环境中可能未安装（测试环境）
-try:
-    from playwright.sync_api import sync_playwright
-except (ImportError, Exception) as e:
-    print(f"[WARNING] Playwright import failed: {e}")
-    sync_playwright = None
+from ..utils.ocr_rule_parser import OcrRuleParser
+from ..utils.webdriver import WebDriverAdapter
 
-# playwright_stealth 是可选的（反爬虫检测）
-try:
-    from playwright_stealth import stealth_sync
-except ImportError:
-    def stealth_sync(page):
-        pass
-
-# V3.5: 移除本地 PaddleOCR，仅使用 DeepSeek OCR（远端）以避免环境问题
-
-from config import VISUAL_SLICE_DIR, DEEPSEEK_API_KEY, DEEPSEEK_MODEL, DEEPSEEK_BASE_URL
+from config import VISUAL_SLICE_DIR, DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL
 
 class VisionAgent:
     """
-    [Vision Agent V3.5 - DeepSeek OCR + LLM 智能代理]
+    [Vision Agent]
     职责：
-    1. 导航到 https://doi.org/{doi}
-    2. 等待页面重定向（Nature、IEEE、Elsevier 等）
-    3. 对顶部视口进行截图（包含作者信息）
-    4. 用 DeepSeek OCR API 识别截图文本（远端）
-    5. 用 DeepSeek 文本模型从 OCR 文本中提取作者信息和排序
-    6. 若 OCR 失败，回退到 mock 数据
+    - 对论文截图执行 OCR → 解析作者/单位/标记
+    - 当 LLM 不可用时，使用规则解析（ocr-rule）保证主链路可跑通
+    - `process(doi)` 会通过 WebDriver 获取截图后调用 `analyze_screenshot`
     """
 
     def __init__(self):
         if not os.path.exists(VISUAL_SLICE_DIR):
             os.makedirs(VISUAL_SLICE_DIR)
 
-    def _validate_and_normalize_authors(self, authors):
+        self.webdriver = WebDriverAdapter()
+        self.ocr_rule_parser = OcrRuleParser()
+
+    def analyze_screenshot(
+        self,
+        image_path: str,
+        doi: Optional[str] = None,
+        scout_authors: Optional[List[Dict[str, Any]]] = None,
+        meta_institutions: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        兼容旧接口：对已有截图执行 OCR+解析，返回与 process 相同的数据结构。
+        """
+        if not image_path or not os.path.exists(image_path):
+            print(f"[Vision] ⚠️ 无效的截图路径: {image_path}")
+            return {"text": "", "image_path": None, "authors": []}
+
+        # 回填 DOI，便于 mock/fallback 路由
+        doi_for_analysis = doi or os.path.splitext(os.path.basename(image_path))[0].replace('_', '/')
+        try:
+            return self._ocr_and_parse(
+                image_path,
+                doi_for_analysis,
+                scout_authors=scout_authors,
+                meta_institutions=meta_institutions,
+            )
+        except Exception as exc:
+            print(f"[Vision] ⚠️ analyze_screenshot 失败: {exc}")
+            return self._get_mock_authors(doi_for_analysis)
+
+    def _validate_and_normalize_authors(self, authors: Any) -> List[Dict[str, Any]]:
         """
         【关键函数】确保作者列表格式正确，兼容Judge Agent的期望格式
         
@@ -49,20 +64,37 @@ class VisionAgent:
             print(f"[Vision] ⚠️ 警告: authors不是list，而是{type(authors)}")
             return []
         
-        validated = []
+        validated: List[Dict[str, Any]] = []
         for i, author in enumerate(authors):
             if not isinstance(author, dict):
                 print(f"[Vision] ⚠️ 警告: author[{i}]不是dict，跳过")
                 continue
             
             # 创建标准化的作者记录
-            normalized = {
+            normalized: Dict[str, Any] = {
                 'name': str(author.get('name', 'Unknown')).strip(),
                 'affiliation': str(author.get('affiliation', '')).strip(),
                 'position': int(author.get('position', 999)),
                 'is_corresponding': bool(author.get('is_corresponding', False)),
                 'is_co_first': bool(author.get('is_co_first', False))
             }
+
+            # 保留可选证据/结构化字段（Judge 可利用）
+            if isinstance(author.get('affiliations'), list):
+                normalized['affiliations'] = [str(x).strip() for x in author.get('affiliations') if str(x).strip()]
+            if isinstance(author.get('affiliation_numbers'), list):
+                nums = []
+                for x in author.get('affiliation_numbers'):
+                    try:
+                        xi = int(x)
+                        if xi > 0:
+                            nums.append(xi)
+                    except Exception:
+                        continue
+                normalized['affiliation_numbers'] = nums
+            for k in ('emails', 'has_mail_icon', 'markers', 'source', 'corresponding_source'):
+                if k in author:
+                    normalized[k] = author.get(k)
             
             # 验证必要字段
             if not normalized['name'] or normalized['name'].lower() == 'unknown':
@@ -77,483 +109,61 @@ class VisionAgent:
     def process(self, doi):
         """
         Vision Agent 的主入口。
-        流程：Playwright 截图 + HTML解析 → OCR 识别 → LLM 解析 → 返回作者列表
+        流程：WebDriver 截图 → OCR 识别 →（LLM 或 ocr-rule）解析 → 返回作者列表
         """
         if not doi:
             return {"text": "", "image_path": None, "authors": []}
 
-        print(f"\n[Vision] 正在初始化浏览器驱动，DOI: {doi}")
-        
-        # 1. 通过浏览器自动化捕获截图和页面源代码
-        capture_result = self._capture_webpage(doi)
-        
-        if not capture_result:
-            # 没有截图，使用 mock 数据
-            print(f"[Vision] ⚠️  无法获取截图，使用 mock 数据")
+        print(f"\n[Vision] 📸 通过 WebDriver 获取截图，DOI: {doi}")
+        image_path = self.webdriver.get_webpage_screenshot(doi)
+        if not image_path:
+            print("[Vision] ⚠️ 无法获取截图，使用 mock 数据")
             return self._get_mock_authors(doi)
-        
-        image_path, page_html = capture_result
-        
-        # 2. 尝试从 HTML 源代码中提取完整作者信息（包括单位）
-        html_authors = self._extract_authors_from_html(page_html, doi)
-        
-        # 3. 用 OCR 识别截图文本，然后用 LLM 解析
-        ocr_result = self._ocr_and_parse(image_path, doi)
-        ocr_authors = ocr_result.get("authors", [])
-        
-        # 4. 合并结果：优先使用 HTML 提取的作者，备选 OCR 结果
-        final_authors = html_authors if html_authors else ocr_authors
-        
-        return {
-            "text": ocr_result.get("text", ""),
-            "image_path": image_path,
-            "authors": final_authors
-        }
 
-    def _handle_selection_page(self, page, doi):
-        """
-        【新增】处理知网"多重解析地址选择页面"
-        
-        某些 DOI（特别是中文论文）会重定向到选择页面，让用户选择论文源。
-        这个函数会自动检测并选择**境内链接**（优先级最高）。
-        """
-        try:
-            # 检测是否是选择页面的标志
-            title = page.title()
-            content = page.content()
-            
-            # 检查标题或内容是否包含选择页面的标志
-            selection_keywords = ["多重解析", "选择", "重定向", "镜像"]
-            is_selection_page = any(keyword in title or keyword in content for keyword in selection_keywords)
-            
-            if not is_selection_page:
-                # 不是选择页面，直接返回
-                return
-            
-            print(f"[Vision] 🔀 检测到多重解析选择页面，正在自动选择...")
-            
-            # 优先选择境内链接
-            # 策略：
-            # 1. 先找包含"境内"文字的链接
-            # 2. 再找 href 中不包含 "mirror" 或 "abroad" 的链接
-            # 3. 最后找第一个 <a> 标签
-            
-            current_url = page.url
-            clicked = False
-            
-            # 方案 1：查找包含"境内"的按钮
-            print("[Vision] 尝试方案 1：查找'境内'链接...")
-            try:
-                domestic_links = page.query_selector_all('a:has-text("境内"), a:has-text("中国")')
-                if domestic_links:
-                    link = domestic_links[0]
-                    href = link.get_attribute('href')
-                    if href and href.strip() and href != '#':
-                        print(f"[Vision] ✅ 找到境内链接，点击...")
-                        link.click()
-                        page.wait_for_navigation(timeout=30000)
-                        page.wait_for_timeout(2000)
-                        clicked = True
-            except Exception as e:
-                print(f"[Vision] ⚠️ 方案 1 失败: {e}")
-            
-            # 方案 2：优先选择包含 (境内) 标记的链接，否则选择第一个非境外链接
-            if not clicked:
-                print("[Vision] 尝试方案 2：查找(境内)链接或第一个非境外链接...")
-                try:
-                    links = page.query_selector_all('a[href^="http"]')
-                    
-                    # 排除所有境外/镜像链接的关键词
-                    skip_keywords = [
-                        'mirror', 'abroad', 'international', 'overseas', 'oversea',
-                        'foreign', 'external', 'proxy', '境外', '国际', 'english'
-                    ]
-                    
-                    # 第一轮：查找所有包含 (境内) 的链接
-                    domestic_marked_links = []
-                    other_safe_links = []
-                    
-                    for link in links:
-                        href = link.get_attribute('href')
-                        text = link.inner_text()
-                        
-                        if not href or not href.strip():
-                            continue
-                        
-                        # 检查是否有 (境内) 标记
-                        if '(境内)' in text or '(境内' in text:
-                            domestic_marked_links.append((link, href, text))
-                        else:
-                            # 检查是否包含排除关键词
-                            should_skip = False
-                            combined = (href + text).lower()
-                            for keyword in skip_keywords:
-                                if keyword in combined:
-                                    should_skip = True
-                                    break
-                            
-                            if not should_skip:
-                                other_safe_links.append((link, href, text))
-                    
-                    # 优先选择 (境内) 链接
-                    selection = domestic_marked_links if domestic_marked_links else other_safe_links
-                    
-                    if selection:
-                        link, href, text = selection[0]
-                        marker = "✅ [境内]" if domestic_marked_links else "✅ [安全]"
-                        print(f"[Vision] {marker} 点击链接: {text}")
-                        print(f"[Vision] 📍 目标URL: {href}")
-                        try:
-                            link.click()
-                            # 尝试等待导航，但如果失败也继续
-                            try:
-                                page.wait_for_navigation(timeout=15000)
-                            except:
-                                page.wait_for_timeout(2000)
-                            clicked = True
-                        except Exception as link_click_error:
-                            print(f"[Vision] ⚠️ 点击失败: {link_click_error}")
-                except Exception as e:
-                    print(f"[Vision] ⚠️ 方案 2 失败: {e}")
-            
-            # 方案 3：点击任意第一个 <a> 标签
-            if not clicked:
-                print("[Vision] 尝试方案 3：点击第一个 <a> 标签...")
-                try:
-                    first_link = page.query_selector('a')
-                    if first_link:
-                        href = first_link.get_attribute('href')
-                        text = first_link.inner_text()
-                        if href and href.strip() and href != '#':
-                            print(f"[Vision] ✅ 点击: {text[:30]}")
-                            first_link.click()
-                            page.wait_for_navigation(timeout=30000)
-                            page.wait_for_timeout(2000)
-                            clicked = True
-                except Exception as e:
-                    print(f"[Vision] ⚠️ 方案 3 失败: {e}")
-            
-            # 检测是否成功（URL 是否改变且不是首页）
-            new_url = page.url
-            if clicked:
-                if new_url != current_url:
-                    print(f"[Vision] ✅ 已跳转到: {new_url}")
-                else:
-                    print(f"[Vision] ⚠️ URL 未改变，可能导航失败")
-            else:
-                print(f"[Vision] ⚠️ 无法自动选择，继续截图当前页面")
-                
-        except Exception as e:
-            print(f"[Vision] ⚠️ 选择页面处理失败: {e}，继续截图")
-
-    def _close_cookie_popup(self, page):
-        """
-        【新增】自动关闭Cookie弹窗，避免挡住截图
-        尝试多种方式：点击按钮、执行JS、等待消失
-        """
-        try:
-            print("[Vision] 🍪 尝试关闭Cookie弹窗...")
-            
-            # 方案1: 点击"接受"按钮 (最常见的ID和类名)
-            accept_selectors = [
-                'button[id*="accept"]',
-                'button[class*="accept"]',
-                'button:has-text("Accept")',
-                'button:has-text("接受")',
-                'button:has-text("同意")',
-                'button:has-text("I Accept")',
-                'a[id*="accept"]',
-                '[role="button"]:has-text("Accept")',
-                '[role="button"]:has-text("接受")',
-            ]
-            
-            for selector in accept_selectors:
-                try:
-                    element = page.query_selector(selector)
-                    if element:
-                        print(f"[Vision] ✅ 找到接受按钮: {selector}")
-                        element.click()
-                        page.wait_for_timeout(1000)  # 等待弹窗关闭动画
-                        return
-                except Exception:
-                    continue
-            
-            # 方案2: 用JavaScript隐藏常见的cookie弹窗容器
-            hide_scripts = [
-                """
-                // 隐藏常见的cookie容器
-                const selectors = [
-                    '[id*="cookie"]', '[class*="cookie"]',
-                    '[id*="gdpr"]', '[class*="gdpr"]',
-                    '[id*="consent"]', '[class*="consent"]',
-                    '[role="dialog"]', '[aria-label*="cookie"]'
-                ];
-                selectors.forEach(sel => {
-                    try {
-                        document.querySelectorAll(sel).forEach(el => {
-                            if (el.offsetHeight < 500) el.style.display = 'none';
-                        });
-                    } catch (e) {}
-                });
-                """,
-                """
-                // 移除任何large overlays
-                document.querySelectorAll('[role="dialog"], .cookie, .gdpr, .consent').forEach(el => {
-                    el.remove();
-                });
-                """
-            ]
-            
-            for script in hide_scripts:
-                try:
-                    page.evaluate(script)
-                    print("[Vision] ✅ 通过JavaScript关闭Cookie弹窗")
-                    page.wait_for_timeout(500)
-                    return
-                except Exception:
-                    continue
-            
-            # 方案3: 等待可能的弹窗自动消失
-            print("[Vision] ⏳ 等待弹窗自动消失...")
-            page.wait_for_timeout(2000)
-            
-        except Exception as e:
-            print(f"[Vision] ⚠️ Cookie处理失败（但继续截图）: {e}")
-
-    def _capture_webpage(self, doi):
-        # 检查 Playwright 是否可用
-        if sync_playwright is None:
-            print(f"[Vision] ⚠️  Playwright 未安装，使用 mock 数据，DOI: {doi}")
-            return None  # 将触发 mock 分析
-        
-        url = f"https://doi.org/{doi}"
-        safe_doi = doi.replace('/', '_')
-        save_path = os.path.join(VISUAL_SLICE_DIR, f"{safe_doi}.png")
-
-        try:
-            with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True)
-                
-                # 【改进】添加更完整的 HTTP headers 和真实浏览器标识
-                context = browser.new_context(
-                    viewport={'width': 1920, 'height': 1080},
-                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-                    extra_http_headers={
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-                        'Accept-Encoding': 'gzip, deflate, br',
-                        'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
-                        'Cache-Control': 'max-age=0',
-                        'DNT': '1',
-                        'Sec-Fetch-Dest': 'document',
-                        'Sec-Fetch-Mode': 'navigate',
-                        'Sec-Fetch-Site': 'none',
-                        'Upgrade-Insecure-Requests': '1'
-                    },
-                    locale='en-US'
-                )
-                page = context.new_page()
-
-                # 【核心防御升级】：为页面注入隐身特征，伪装成真实人类浏览器
-                stealth_sync(page)
-                
-                # 【新增】添加事件监听以检测网络错误
-                response_status = {'code': None, 'url': None}
-                
-                def on_response(response):
-                    response_status['code'] = response.status
-                    response_status['url'] = response.url
-                
-                page.on('response', on_response)
-
-                print(f"[Vision] 🌐 正在导航到: {url}")
-                try:
-                    response = page.goto(url, wait_until="domcontentloaded", timeout=45000)
-                    
-                    # 检查是否被拒绝
-                    if response and response.status >= 400:
-                        print(f"[Vision] ⚠️  HTTP {response.status} - 访问被拒绝")
-                        print(f"[Vision] 🔄 尝试添加 Referer 重试...")
-                        
-                        # 重试：添加 Referer
-                        context2 = browser.new_context(
-                            viewport={'width': 1920, 'height': 1080},
-                            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-                            extra_http_headers={
-                                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-                                'Accept-Encoding': 'gzip, deflate, br',
-                                'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
-                                'Referer': 'https://www.google.com/',
-                                'Cache-Control': 'max-age=0'
-                            },
-                            locale='en-US'
-                        )
-                        page = context2.new_page()
-                        stealth_sync(page)
-                        
-                        response = page.goto(url, wait_until="domcontentloaded", timeout=45000)
-                        
-                        if response and response.status >= 400:
-                            print(f"[Vision] ⚠️  再次失败 HTTP {response.status}，使用 mock 数据")
-                            browser.close()
-                            return None
-                    
-                except Exception as e:
-                    print(f"[Vision] ⚠️  导航异常: {e}")
-                    browser.close()
-                    return None
-                
-                # 等待页面完全加载
-                page.wait_for_timeout(3000)
-                
-                # 【新增】检测知网多重解析选择页面，自动选择第一个
-                self._handle_selection_page(page, doi)
-                
-                # 【新增】关闭Cookie弹窗
-                self._close_cookie_popup(page)
-
-                page.screenshot(path=save_path)
-                print(f"[Vision] 📸 截图已保存: {save_path}")
-                
-                # 获取页面源代码用于 HTML 解析
-                page_html = page.content()
-                
-                browser.close()
-                return (save_path, page_html)
-
-        except Exception as e:
-            print(f"[Vision] ❌ 浏览器自动化错误: {e}")
-            return None
+        return self.analyze_screenshot(image_path, doi=doi)
     
-    def _extract_authors_from_html(self, page_html, doi):
-        """
-        【新增】从 HTML 源代码中提取作者和单位信息
-        
-        知网等平台的完整作者列表通常在 HTML 中的 Meta 标签或 JSON-LD 数据中
-        这个函数尝试多种提取方式：
-        1. 查找 JSON-LD 格式的结构化数据
-        2. 查找 Meta author/creator 标签
-        3. 使用正则表达式查找知网格式的数据
-        """
-        if not page_html:
-            return []
-        
-        print(f"[Vision] 🔍 从 HTML 源代码提取作者信息...")
-        authors = []
-        
-        try:
-            import json
-            import re
-            from html import unescape
-            
-            # 方案 1：查找 JSON-LD 格式的结构化数据
-            json_ld_pattern = r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>([\\s\\S]*?)</script>'
-            json_ld_matches = re.findall(json_ld_pattern, page_html)
-            
-            for json_str in json_ld_matches:
-                try:
-                    data = json.loads(json_str)
-                    
-                    # 查找 author 字段
-                    if 'author' in data:
-                        author_data = data['author']
-                        if isinstance(author_data, list):
-                            for author in author_data:
-                                name = author.get('name', '').strip() if isinstance(author, dict) else str(author).strip()
-                                affiliation = ""
-                                if isinstance(author, dict) and 'affiliation' in author:
-                                    aff_data = author['affiliation']
-                                    if isinstance(aff_data, dict):
-                                        affiliation = aff_data.get('name', '').strip()
-                                    else:
-                                        affiliation = str(aff_data).strip()
-                                
-                                if name:
-                                    authors.append({
-                                        "name": name,
-                                        "affiliation": affiliation or "Unknown",
-                                        "order": len(authors) + 1
-                                    })
-                        elif isinstance(author_data, dict):
-                            name = author_data.get('name', '').strip()
-                            affiliation = ""
-                            if 'affiliation' in author_data:
-                                aff_data = author_data['affiliation']
-                                if isinstance(aff_data, dict):
-                                    affiliation = aff_data.get('name', '').strip()
-                                else:
-                                    affiliation = str(aff_data).strip()
-                            
-                            if name:
-                                authors.append({
-                                    "name": name,
-                                    "affiliation": affiliation or "Unknown",
-                                    "order": len(authors) + 1
-                                })
-                except (json.JSONDecodeError, KeyError) as e:
-                    continue
-            
-            if authors:
-                print(f"[Vision] ✅ 从 JSON-LD 提取了 {len(authors)} 位作者")
-                return authors
-            
-            # 方案 2：查找 Meta author/creator 标签
-            author_meta_pattern = r'<meta[^>]*name=["\']?(?:author|creator|DC\.creator)["\']?[^>]*content=["\']([^"]+)["\'][^>]*>'
-            author_matches = re.findall(author_meta_pattern, page_html, re.IGNORECASE)
-            
-            for author_name in author_matches:
-                author_name = unescape(author_name).strip()
-                if author_name and len(author_name) > 1:
-                    authors.append({
-                        "name": author_name,
-                        "affiliation": "Unknown",
-                        "order": len(authors) + 1
-                    })
-            
-            if authors:
-                print(f"[Vision] ✅ 从 Meta 标签提取了 {len(authors)} 位作者")
-                return authors
-            
-        except Exception as e:
-            print(f"[Vision] ⚠️ HTML 解析异常: {e}")
-        
-        print(f"[Vision] ⚠️ 未能从 HTML 提取作者信息，将使用 OCR 方案")
-        return []
-
-    def _mock_vlm_analysis(self, image_path, doi):
-        """
-        [已弃用] 调用 DeepSeek-VL API 来分析论文截图中的作者信息。
-        现已改用 OCR + LLM 方案
-        """
-        print(f"[Vision] 🧠 正在分析 {image_path or 'mock 数据'}，DOI: {doi}")
-        
-        # 如果没有截图或没有 API 密钥，使用 mock 数据
-        if image_path is None or not DEEPSEEK_API_KEY:
-            return self._get_mock_authors(doi)
-        
-        # 调用真实的 DeepSeek VLM API
-        try:
-            return self._call_deepseek_vlm(image_path, doi)
-        except Exception as e:
-            print(f"[Vision] ⚠️  DeepSeek VLM 错误: {e}，回退到 mock 数据")
-            return self._get_mock_authors(doi)
-    
-    def _ocr_and_parse(self, image_path, doi):
+    def _ocr_and_parse(
+        self,
+        image_path: str,
+        doi: str,
+        scout_authors: Optional[List[Dict[str, Any]]] = None,
+        meta_institutions: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
         """
         新流程：OCR 识别 → DeepSeek 文本模型解析
         """
         print(f"[Vision] 🔍 使用 OCR 识别截图文本...")
         
-        # 第一步：OCR 识别截图中的文本
-        ocr_text = self._extract_text_by_ocr(image_path)
+        # 第一步：OCR 识别截图中的文本（若可用，先尝试带 BBox 的 OCR 以便做 ROI 切片）
+        ocr_text = None
+        ocr_items: List[Dict[str, Any]] = []
+        if os.getenv("OCR_ENABLE_ROI", "1").strip().lower() not in {"0", "false", "no"}:
+            ocr_text, ocr_items = self._extract_text_and_boxes_by_ocr(image_path)
+
+        if not ocr_text:
+            ocr_text = self._extract_text_by_ocr(image_path)
         
         if not ocr_text:
-            print(f"[Vision] ⚠️  OCR 识别失败，回退到 mock 数据")
-            return self._get_mock_authors(doi)
+            # OCR 失败时不要回退到 mock（会污染后续融合/输出）。
+            # 让 Orchestrator 用 hover authors 兜底（或至少保留 Scout authors）。
+            print(f"[Vision] ⚠️  OCR 识别失败，返回空 authors，等待 hover/scout 兜底")
+            return {"text": "", "image_path": image_path, "authors": [], "ocr_failed": True}
         
+        # ROI 切片：从整页 OCR 中定位作者块和单位块，减少噪声
+        if ocr_text and ocr_items and scout_authors:
+            roi_text = self._build_roi_text(image_path, ocr_items, scout_authors)
+            if roi_text:
+                ocr_text = roi_text
+
         # 第二步：用 DeepSeek 文本模型从 OCR 文本中提取作者信息
         print(f"[Vision] 📝 OCR 识别的文本长度: {len(ocr_text)} 字符")
         
-        authors = self._parse_authors_from_text(ocr_text, doi)
+        authors = self._parse_authors_from_text(
+            ocr_text,
+            doi,
+            scout_authors=scout_authors,
+            meta_institutions=meta_institutions,
+        )
         
         return {
             "text": ocr_text[:500] + "..." if len(ocr_text) > 500 else ocr_text,
@@ -575,7 +185,14 @@ class VisionAgent:
         # 方案 1️⃣：优先使用本地 PaddleOCR（最稳定）
         print("[Vision] 📝 尝试本地 PaddleOCR...")
         try:
-            from paddleocr import PaddleOCR
+            # Paddle/PaddleOCR 在部分版本组合下会触发 PIR/oneDNN 执行器的不兼容错误。
+            # 默认使用更保守的执行路径，提升稳定性（用户可自行通过环境变量覆盖）。
+            os.environ.setdefault("FLAGS_enable_pir_api", "0")
+            os.environ.setdefault("FLAGS_enable_pir_in_executor", "0")
+            os.environ.setdefault("FLAGS_use_mkldnn", "0")
+            os.environ.setdefault("FLAGS_use_onednn", "0")
+
+            from paddleocr import PaddleOCR  # type: ignore[import-not-found]
             # 使用新参数名，避免过时警告
             ocr = PaddleOCR(use_textline_orientation=True, lang='ch')
             result = ocr.predict(str(image_path))  # 改用 predict() 方法（新版本）
@@ -622,6 +239,164 @@ class VisionAgent:
         else:
             print(f"[Vision] ❌ 所有 OCR 方案都失败了")
             return None
+
+    def _extract_text_and_boxes_by_ocr(self, image_path: str) -> tuple[Optional[str], List[Dict[str, Any]]]:
+        """OCR + BBox 信息（用于 ROI 切片）。失败时返回 (None, [])."""
+        print("[Vision] 🧩 尝试 OCR+BBox (ROI)")
+        try:
+            # 保守执行路径，避免 PIR/oneDNN 报错
+            os.environ.setdefault("FLAGS_enable_pir_api", "0")
+            os.environ.setdefault("FLAGS_enable_pir_in_executor", "0")
+            os.environ.setdefault("FLAGS_use_mkldnn", "0")
+            os.environ.setdefault("FLAGS_use_onednn", "0")
+
+            from paddleocr import PaddleOCR  # type: ignore[import-not-found]
+            ocr = PaddleOCR(use_textline_orientation=True, lang='ch')
+            result = ocr.ocr(str(image_path), cls=True)
+
+            def _is_line_entry(x: Any) -> bool:
+                return isinstance(x, (list, tuple)) and len(x) >= 2 and isinstance(x[0], (list, tuple))
+
+            lines = []
+            if isinstance(result, list) and result:
+                if _is_line_entry(result[0]):
+                    lines = result
+                elif isinstance(result[0], list) and result[0] and _is_line_entry(result[0][0]):
+                    lines = result[0]
+
+            items: List[Dict[str, Any]] = []
+            text_lines: List[str] = []
+            for line in lines:
+                try:
+                    box = line[0]
+                    rec = line[1]
+                    text = ""
+                    score = None
+                    if isinstance(rec, (list, tuple)) and rec:
+                        text = str(rec[0] or "").strip()
+                        if len(rec) > 1 and isinstance(rec[1], (int, float)):
+                            score = float(rec[1])
+                    if text:
+                        items.append({"text": text, "score": score, "box": box})
+                        if score is None or score > 0.3:
+                            text_lines.append(text)
+                except Exception:
+                    continue
+
+            if text_lines:
+                return "\n".join(text_lines), items
+        except Exception:
+            pass
+
+        return None, []
+
+    def _build_roi_text(
+        self,
+        image_path: str,
+        ocr_items: List[Dict[str, Any]],
+        scout_authors: List[Dict[str, Any]],
+    ) -> Optional[str]:
+        """基于 OCR BBox 切片作者块与单位块，减少噪声。"""
+        if not ocr_items or not scout_authors:
+            return None
+
+        def _name_tokens(name: str) -> List[str]:
+            tokens = re.findall(r"[A-Za-z]+", str(name or ""))
+            return [t.lower() for t in tokens if len(t) >= 3]
+
+        name_tokens = set()
+        for a in scout_authors:
+            if isinstance(a, dict):
+                for t in _name_tokens(a.get("name")):
+                    name_tokens.add(t)
+            elif isinstance(a, str):
+                for t in _name_tokens(a):
+                    name_tokens.add(t)
+
+        def _box_points(box: Any) -> List[tuple[float, float]]:
+            if not box:
+                return []
+            if isinstance(box, (list, tuple)) and box and isinstance(box[0], (int, float)):
+                pts = []
+                for i in range(0, len(box) - 1, 2):
+                    pts.append((float(box[i]), float(box[i + 1])))
+                return pts
+            if isinstance(box, (list, tuple)) and box and isinstance(box[0], (list, tuple)):
+                return [(float(p[0]), float(p[1])) for p in box if isinstance(p, (list, tuple)) and len(p) >= 2]
+            return []
+
+        def _union_bbox(boxes: List[Any]) -> Optional[tuple[int, int, int, int]]:
+            xs: List[float] = []
+            ys: List[float] = []
+            for b in boxes:
+                for x, y in _box_points(b):
+                    xs.append(x)
+                    ys.append(y)
+            if not xs or not ys:
+                return None
+            return (int(min(xs)), int(min(ys)), int(max(xs)), int(max(ys)))
+
+        author_boxes = []
+        aff_boxes = []
+        for it in ocr_items:
+            text = str(it.get("text") or "").strip()
+            text_l = text.lower()
+            if not text_l:
+                continue
+            if name_tokens and any(tok in text_l for tok in name_tokens):
+                author_boxes.append(it.get("box"))
+            if re.match(r"^\s*\d{1,2}\s*[\.\)]\s+", text_l) or re.search(
+                r"\b(university|hospital|institute|department|school|center|centre|college)\b",
+                text_l,
+            ):
+                aff_boxes.append(it.get("box"))
+
+        if not author_boxes and not aff_boxes:
+            return None
+
+        try:
+            from PIL import Image
+            img = Image.open(image_path)
+            w, h = img.size
+
+            def _crop_to(box: tuple[int, int, int, int], suffix: str) -> Optional[str]:
+                x1, y1, x2, y2 = box
+                margin = 12
+                x1 = max(0, x1 - margin)
+                y1 = max(0, y1 - margin)
+                x2 = min(w, x2 + margin)
+                y2 = min(h, y2 + margin)
+                if x2 <= x1 or y2 <= y1:
+                    return None
+                crop = img.crop((x1, y1, x2, y2))
+                base = os.path.splitext(os.path.basename(image_path))[0]
+                out_path = os.path.join(VISUAL_SLICE_DIR, f"{base}_{suffix}.png")
+                crop.save(out_path)
+                return out_path
+
+            roi_texts: List[str] = []
+            author_bb = _union_bbox(author_boxes)
+            if author_bb:
+                p = _crop_to(author_bb, "roi_author")
+                if p:
+                    t = self._extract_text_by_ocr(p)
+                    if t:
+                        roi_texts.append(t)
+
+            aff_bb = _union_bbox(aff_boxes)
+            if aff_bb:
+                p = _crop_to(aff_bb, "roi_aff")
+                if p:
+                    t = self._extract_text_by_ocr(p)
+                    if t:
+                        roi_texts.append(t)
+
+            if roi_texts:
+                return "\n".join(roi_texts)
+        except Exception:
+            return None
+
+        return None
     
     def _call_deepseek_ocr(self, image_path):
         """
@@ -732,13 +507,25 @@ class VisionAgent:
             print(f"[Vision] ❌ DeepSeek OCR 调用错误: {e}")
             return None
     
-    def _parse_authors_from_text(self, ocr_text, doi):
+    def _parse_authors_from_text(
+        self,
+        ocr_text: str,
+        doi: str,
+        scout_authors: Optional[List[Dict[str, Any]]] = None,
+        meta_institutions: Optional[List[str]] = None,
+    ) -> List[Dict[str, Any]]:
         """
         使用 DeepSeek 文本模型从 OCR 文本中提取作者信息和排序
         """
         if not DEEPSEEK_API_KEY:
-            print("[Vision] ⚠️  未配置 DeepSeek API KEY，无法解析作者")
-            return []
+            print("[Vision] ℹ️ 未配置 DeepSeek API KEY，使用规则解析作者/单位")
+            authors = self.ocr_rule_parser.parse_authors_rule_based(
+                ocr_text,
+                doi,
+                scout_authors=scout_authors,
+                meta_institutions=meta_institutions,
+            )
+            return self._validate_and_normalize_authors(authors)
         
         try:
             headers = {
@@ -795,99 +582,98 @@ OCR 识别的文本：
                 authors = data.get('authors', [])
                 # ✅ 添加数据验证和规范化
                 authors = self._validate_and_normalize_authors(authors)
+                # 方案A：规则优先。若规则提取到角标/单位，则覆盖 LLM 的单位信息。
+                authors = self._merge_rule_affiliations(
+                    authors,
+                    ocr_text,
+                    scout_authors=scout_authors,
+                    meta_institutions=meta_institutions,
+                )
                 print(f"[Vision] ✅ 成功识别 {len(authors)} 名作者")
                 return authors
             except json.JSONDecodeError:
                 print(f"[Vision] ⚠️  返回内容不是有效 JSON: {content[:100]}")
-                return []
+                authors = self.ocr_rule_parser.parse_authors_rule_based(
+                    ocr_text,
+                    doi,
+                    scout_authors=scout_authors,
+                    meta_institutions=meta_institutions,
+                )
+                return self._validate_and_normalize_authors(authors)
         
         except Exception as e:
             print(f"[Vision] ❌ DeepSeek 解析错误: {e}")
-            return []
-    
-    def _call_deepseek_vlm(self, image_path, doi):
-        """
-        调用 DeepSeek VLM API 从截图中提取作者信息。
-        """
-        # 读取截图并转换为 base64
-        with open(image_path, 'rb') as f:
-            image_data = base64.b64encode(f.read()).decode('utf-8')
-        
-        headers = {
-            "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "model": DEEPSEEK_MODEL,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/png;base64,{image_data}"
-                            }
-                        },
-                        {
-                            "type": "text",
-                            "text": """请仔细识别论文中的所有作者信息（作者名字、所属机构）。
+            authors = self.ocr_rule_parser.parse_authors_rule_based(
+                ocr_text,
+                doi,
+                scout_authors=scout_authors,
+                meta_institutions=meta_institutions,
+            )
+            return self._validate_and_normalize_authors(authors)
 
-请返回 JSON 格式的结果，每个作者的信息仅需要以下字段：
-{
-  "authors": [
-    {"name": "作者名称（中文或英文）", "affiliation": "所属机构", "position": 1, "is_corresponding": false, "is_co_first": false},
-    {"name": "另一个作者", "affiliation": "机构名", "position": 2, "is_corresponding": true, "is_co_first": false},
-    ...
-  ],
-  "notes": "任何有用的补充说明"
-}
+    def _merge_rule_affiliations(
+        self,
+        llm_authors: List[Dict[str, Any]],
+        ocr_text: str,
+        scout_authors: Optional[List[Dict[str, Any]]] = None,
+        meta_institutions: Optional[List[str]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Rule-first merge for affiliations.
 
-重要提示：
-- 通讯作者（Corresponding Author）通常带有 * 符号、邮件图标或 "Corresponding" 字样，设置 is_corresponding 为 true
-- 共同一作（Co-first Author）通常带有 # 符号或 "Co-first" 标注，设置 is_co_first 为 true
-- position 字段是作者在作者列表中的位置顺序（从 1 开始）
-- 如果机构信息不可用或需要点击展开，请在 affiliation 字段中标注，如"需展开详情"
-- 只返回 JSON（不要额外文本）"""
-        }
-                    ]
-                }
-            ],
-            "max_tokens": 2048
-        }
-        
-        response = requests.post(
-            f"{DEEPSEEK_BASE_URL}/chat/completions",
-            headers=headers,
-            json=payload,
-            timeout=30
+        If ocr-rule extracted affiliation numbers or affiliations, use them.
+        Otherwise keep LLM output.
+        """
+        if not llm_authors:
+            return llm_authors
+
+        rule_authors = self.ocr_rule_parser.parse_authors_rule_based(
+            ocr_text,
+            doi="",
+            scout_authors=scout_authors,
+            meta_institutions=meta_institutions,
         )
-        
-        response.raise_for_status()
-        result = response.json()
-        
-        # 解析模型回复
-        content = result['choices'][0]['message']['content']
-        
-        # 尝试解析 JSON
-        try:
-            data = json.loads(content)
-            authors = data.get('authors', [])
-            # ✅ 添加数据验证和规范化
-            authors = self._validate_and_normalize_authors(authors)
-            notes = data.get('notes', '')
-            text = f"从论文截图中提取的作者信息。{notes if notes else ''}"
-        except json.JSONDecodeError:
-            # 如果不是 JSON，直接使用文本
-            authors = []
-            text = content
-        
-        return {
-            "text": text,
-            "image_path": image_path,
-            "authors": authors
-        }
+        rule_authors = self._validate_and_normalize_authors(rule_authors)
+
+        def _name_key(name: str) -> str:
+            return "".join(ch for ch in str(name or "").lower() if ch.isalnum())
+
+        def _order(a: Dict[str, Any]) -> int:
+            v = a.get("position")
+            if isinstance(v, int):
+                return v
+            v = a.get("order")
+            if isinstance(v, int):
+                return v
+            return -1
+
+        rule_by_name = { _name_key(a.get("name")): a for a in rule_authors if isinstance(a, dict) and a.get("name") }
+        rule_by_order = { _order(a): a for a in rule_authors if isinstance(a, dict) and _order(a) > 0 }
+
+        merged: List[Dict[str, Any]] = []
+        for la in llm_authors:
+            if not isinstance(la, dict):
+                continue
+            key = _name_key(la.get("name"))
+            ra = rule_by_name.get(key) if key else None
+            if ra is None:
+                o = _order(la)
+                if o > 0:
+                    ra = rule_by_order.get(o)
+
+            if ra:
+                # Only override when rule has signals
+                if ra.get("affiliation_numbers"):
+                    la["affiliation_numbers"] = ra.get("affiliation_numbers")
+                if ra.get("affiliations"):
+                    la["affiliations"] = ra.get("affiliations")
+                    la["affiliation"] = "; ".join(ra.get("affiliations") or [])
+                elif ra.get("affiliation"):
+                    la["affiliation"] = ra.get("affiliation")
+                if ra.get("markers"):
+                    la["markers"] = ra.get("markers")
+            merged.append(la)
+
+        return merged
     
     def _get_mock_authors(self, doi):
         """

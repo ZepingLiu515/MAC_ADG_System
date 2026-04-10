@@ -50,9 +50,9 @@ def check_code_structure():
     print("=" * 80)
     
     required_files = [
-        'backend/agents/judge_agent_v2.py',
+        'backend/agents/judge_agent.py',
         'backend/agents/scout_agent.py',
-        'backend/agents/vision_agent_v2.py',
+        'backend/agents/vision_agent.py',
         'backend/orchestrator.py',
         'backend/utils/webdriver.py',
         'database/models.py',
@@ -80,7 +80,7 @@ def check_judge_agent_methods():
     print("=" * 80)
     
     try:
-        from backend.agents.judge_agent_v2 import JudgeAgent
+        from backend.agents.judge_agent import JudgeAgent
         
         judge = JudgeAgent()
         
@@ -208,7 +208,7 @@ def performance_benchmark():
     print("=" * 80)
     
     try:
-        from backend.agents.judge_agent_v2 import JudgeAgent
+        from backend.agents.judge_agent import JudgeAgent
         from database.connection import get_db
         from database.models import Faculty
         

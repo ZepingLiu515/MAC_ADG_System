@@ -1,9 +1,10 @@
 import pandas as pd
-from typing import List, Dict, Set
+import os
+from typing import Any, List, Dict, Set
 
 from .agents.scout_agent import ScoutAgent
-from .agents.vision_agent_v2 import VisionAgent
-from .agents.judge_agent_v2 import JudgeAgent
+from .agents.vision_agent import VisionAgent
+from .agents.judge_agent import JudgeAgent
 from .utils.webdriver import WebDriverAdapter
 from database.connection import get_db
 from database.models import Paper, PaperAuthor
@@ -31,6 +32,12 @@ class Orchestrator:
         self.vision = VisionAgent()
         self.judge = JudgeAgent()
         self.webdriver = WebDriverAdapter()
+
+    def _env_truthy(self, name: str, default: str = "0") -> bool:
+        raw = os.getenv(name, default)
+        if raw is None:
+            return False
+        return str(raw).strip() not in {"0", "false", "False", "no", "NO", ""}
 
     # ------------------------------------------------------------------
     # 内部辅助函数
@@ -112,9 +119,11 @@ class Orchestrator:
                     
                     # ⚡ 优化 2/3：使用内存缓存查询（不查数据库）
                     status_info = doi_status_map.get(doi)
+
+                    force_reprocess = self._env_truthy("FORCE_REPROCESS", default="0")
                     
-                    # 情况 1：论文已完成 → 直接返回缓存结果
-                    if status_info and status_info.get('status') == 'COMPLETED':
+                    # 情况 1：论文已完成/已跳过/待复核 → 直接返回缓存结果
+                    if (not force_reprocess) and status_info and status_info.get('status') in {'COMPLETED', 'SKIPPED', 'NEEDS_REVIEW'}:
                         print(f"\n[去重] ✅ 该论文已处理过（{status_info.get('created_at')}）")
                         print(f"      标题: {status_info.get('title')}")
                         
@@ -125,7 +134,7 @@ class Orchestrator:
                         
                         record.update({
                             "title": status_info.get('title'),
-                            "status": "COMPLETED",
+                            "status": status_info.get('status'),
                             "matched_authors": len([a for a in authors if a.matched_faculty_id]),
                             "total_authors": len(authors),
                             "skipped": True
@@ -136,7 +145,7 @@ class Orchestrator:
                         continue
                     
                     # 情况 2：论文正在处理 → 提示稍后重试
-                    elif status_info and status_info.get('status') == 'PROCESSING':
+                    elif (not force_reprocess) and status_info and status_info.get('status') == 'PROCESSING':
                         print(f"\n[去重] ⚠️ 该论文正在处理中，请稍后重试")
                         record["status"] = "PROCESSING"
                         record["skipped"] = True
@@ -170,6 +179,9 @@ class Orchestrator:
                     print(f"\n[步骤 1/4] 🕵️ Scout Agent - 获取元数据...")
                     scout_data = self.scout.run(doi)
                     record.update(scout_data)
+                    # 便于排查 403：记录 Scout 提供的落地页 URL
+                    if scout_data.get('landing_page_url'):
+                        record['landing_page_url'] = scout_data.get('landing_page_url')
                     print(f"[Scout] ✅ 获取了元数据，包含 {len(scout_data.get('authors', []))} 位 Crossref 作者")
                     
                     # 更新 Paper 记录
@@ -182,14 +194,55 @@ class Orchestrator:
                     
                     # 2️⃣ WebDriver：导航并获取截图
                     print(f"\n[步骤 2/4] 🌐 WebDriver - 获取截图...")
-                    screenshot_path = self.webdriver.get_webpage_screenshot(doi)
+                    screenshot_path = self.webdriver.get_webpage_screenshot(
+                        doi,
+                        landing_page_url=scout_data.get('landing_page_url')
+                    )
+
+                    # 🆕 2.5️⃣ 页面交互提取（hover 作者详情）
+                    # 说明：很多出版社把作者单位/邮箱放在 hover tooltip 或弹层里，首页并不展示。
+                    # 这是合规的页面交互（不绕过风控）；若页面被拦截，该方法会返回 None。
+                    page_author_data: Any = None
+                    try:
+                        # 环境变量可关闭：PLAYWRIGHT_EXTRACT_AUTHOR_DETAILS=0
+                        if os.getenv('PLAYWRIGHT_EXTRACT_AUTHOR_DETAILS', '1').strip() not in {'0', 'false', 'False', 'no', 'NO'}:
+                            print(f"\n[步骤 2.5/4] 🧾 WebDriver - hover 提取作者单位/邮箱线索...")
+                            page_author_data = self.webdriver.extract_author_hover_data(
+                                doi,
+                                landing_page_url=scout_data.get('landing_page_url'),
+                            )
+                            if page_author_data and isinstance(page_author_data, dict):
+                                record['page_author_data'] = page_author_data
+                                extracted = page_author_data.get('authors') or []
+                                print(f"[WebDriver] ✅ hover 提取到 {len(extracted)} 位作者（可能包含单位/email 线索）")
+                            else:
+                                print(f"[WebDriver] ⏭️ hover 未提取到作者详情（可能站点不支持/结构不匹配）")
+                    except Exception as _:
+                        pass
                     
                     if screenshot_path:
                         record['screenshot_path'] = screenshot_path
                         
                         # 3️⃣ Vision Agent：分析截图提取视觉作者信息
                         print(f"\n[步骤 3/4] 👁️ Vision Agent - 分析截图...")
-                        vision_data = self.vision.analyze_screenshot(screenshot_path)
+                        meta_institutions = None
+                        try:
+                            if isinstance(record.get('page_author_data'), dict):
+                                meta = record['page_author_data'].get('meta') or {}
+                                mi = meta.get('citation_author_institution')
+                                if isinstance(mi, list) and mi:
+                                    meta_institutions = mi
+                        except Exception:
+                            meta_institutions = None
+
+                        vision_data = self.vision.analyze_screenshot(
+                            screenshot_path,
+                            doi=doi,
+                            scout_authors=scout_data.get('authors'),
+                            meta_institutions=meta_institutions,
+                        )
+                        # 保留完整 vision_data，供 Judge 融合使用
+                        record['vision_data'] = vision_data
                         
                         vision_authors = vision_data.get('authors', [])
                         print(f"[Vision] ✅ 从截图提取了 {len(vision_authors)} 位作者（含视觉标记）")
@@ -197,11 +250,126 @@ class Orchestrator:
                         record['vision_authors'] = vision_authors
                     else:
                         print(f"[WebDriver] ⚠️ 无法获取截图，跳过 Vision 分析")
+                        record['screenshot_path'] = None
+                        record['screenshot_status'] = 'BLOCKED_OR_FAILED'
                         record['vision_authors'] = []
+                        record['vision_data'] = {'text': '', 'image_path': None, 'authors': []}
+
+                    # 🆕 把 hover 提取的作者信息并入 vision_data（当 OCR 没提取到作者/单位时尤其重要）
+                    try:
+                        if isinstance(record.get('page_author_data'), dict):
+                            hover_authors = record['page_author_data'].get('authors') or []
+                        else:
+                            hover_authors = []
+
+                        if hover_authors:
+                            vdata = record.get('vision_data') or {}
+                            vauthors = vdata.get('authors') or []
+
+                            # 若 OCR 未提取到作者（或作者为空），直接使用 hover authors
+                            if not vauthors:
+                                vdata['authors'] = hover_authors
+                                vdata['text'] = (vdata.get('text') or '')
+                                # 拼接 tooltip 文本给 Judge/调试
+                                raw_tooltips = record['page_author_data'].get('raw_tooltips') or []
+                                tooltip_text = "\n".join([t.get('tooltip', '') for t in raw_tooltips if isinstance(t, dict) and t.get('tooltip')])
+                                if tooltip_text and not vdata['text']:
+                                    vdata['text'] = tooltip_text
+                                vdata['source'] = 'hover'
+                                record['vision_data'] = vdata
+                                record['vision_authors'] = hover_authors
+                                print(f"[Orchestrator] ✅ 使用 hover 作者数据补全 vision_data")
+                            else:
+                                # OCR 已提取作者：将 hover 的通讯/邮箱/单位线索按 name/order 融合进去（不覆盖已有结构）
+                                def _name_key(name: str) -> str:
+                                    if not name:
+                                        return ""
+                                    return "".join(ch for ch in str(name).lower() if ch.isalnum())
+
+                                def _order(a: dict) -> int:
+                                    if not isinstance(a, dict):
+                                        return -1
+                                    for k in ('order', 'position'):
+                                        v = a.get(k)
+                                        if isinstance(v, int):
+                                            return v
+                                    return -1
+
+                                hover_by_name = { _name_key(a.get('name')): a for a in hover_authors if isinstance(a, dict) and a.get('name') }
+                                hover_by_order = { _order(a): a for a in hover_authors if isinstance(a, dict) and _order(a) > 0 }
+
+                                merged = 0
+                                for va in vauthors:
+                                    if not isinstance(va, dict):
+                                        continue
+                                    key = _name_key(va.get('name'))
+                                    ha = hover_by_name.get(key) if key else None
+                                    if ha is None:
+                                        o = _order(va)
+                                        if o > 0:
+                                            ha = hover_by_order.get(o)
+                                    if not ha:
+                                        continue
+
+                                    # 权益标记：OR 合并
+                                    for flag in ('is_corresponding', 'is_co_first'):
+                                        if flag in ha:
+                                            va[flag] = bool(va.get(flag)) or bool(ha.get(flag))
+
+                                    # 单位补全：仅当 Vision 未给出或 Unknown
+                                    v_aff = str(va.get('affiliation') or '').strip()
+                                    h_aff = str(ha.get('affiliation') or '').strip()
+                                    if (not v_aff) or (v_aff.lower() == 'unknown'):
+                                        if h_aff and h_aff.lower() != 'unknown':
+                                            va['affiliation'] = h_aff
+
+                                    # 证据字段（不覆盖已有）
+                                    for k in ('emails', 'has_mail_icon', 'markers', 'source'):
+                                        if k in ha and k not in va:
+                                            va[k] = ha.get(k)
+                                    if va.get('is_corresponding') and not va.get('corresponding_source') and ha.get('is_corresponding'):
+                                        va['corresponding_source'] = 'hover'
+                                    merged += 1
+
+                                if merged:
+                                    vdata['authors'] = vauthors
+                                    record['vision_data'] = vdata
+                                    record['vision_authors'] = vauthors
+                                    print(f"[Orchestrator] ✅ 已将 hover 线索融合进 Vision 作者（{merged} 人）")
+                    except Exception:
+                        pass
                     
                     # 4️⃣ Judge Agent：身份匹配与融合
                     print(f"\n[步骤 4/4] ⚖️ Judge Agent - 身份匹配...")
-                    judge_result = self.judge.adjudicate(scout_data, record.get('vision_data', {}))
+                    judge_result = self.judge.adjudicate(scout_data, record.get('vision_data') or {})
+                    record['judge_result'] = judge_result
+
+                    if isinstance(judge_result, dict) and judge_result.get('status') == 'skipped':
+                        print(f"[Judge] ⏭️ 跳过：{judge_result.get('reason', '')}")
+                        record["status"] = "SKIPPED"
+                        record["skipped"] = True
+                        # 如果已创建 paper 记录，将状态标记为 SKIPPED
+                        paper = db.query(Paper).filter(Paper.doi == doi).first()
+                        if paper:
+                            paper.status = "SKIPPED"
+                            db.commit()
+                        results.append(record)
+                        processed_in_batch.add(doi)
+                        continue
+
+                    if isinstance(judge_result, dict) and judge_result.get('status') == 'needs_review':
+                        print(f"[Judge] ⚠️ 需要人工复核（单位命中但未匹配到教师）")
+                        record["status"] = "NEEDS_REVIEW"
+                        record["skipped"] = False
+                        paper = db.query(Paper).filter(Paper.doi == doi).first()
+                        if paper:
+                            paper.status = "NEEDS_REVIEW"
+                            db.commit()
+                        results.append(record)
+                        processed_in_batch.add(doi)
+                        doi_status_map[doi]['status'] = 'NEEDS_REVIEW'
+                        continue
+
                     print(f"[Judge] ✅ 匹配完成，结果已存储到数据库")
                     
                     # ✅ 标记为 COMPLETED
