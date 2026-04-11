@@ -19,11 +19,11 @@ class ScoutAgent:
         pass
 
     def run(self, doi):
-        print(f"[Scout] 正在获取 DOI 的元数据: {doi}")
+        print(f"[Scout] Fetching metadata for DOI: {doi}")
         metadata = self.fetch_metadata(doi)
 
         if not metadata:
-            return {"status": "error", "message": "无效的 DOI", "doi": doi}
+            return {"status": "error", "message": "Invalid DOI", "doi": doi}
 
         return {
             "doi": doi,
@@ -88,7 +88,7 @@ class ScoutAgent:
                     "openalex_used": openalex_used,
                 }
         except Exception as e:
-            print(f"[Scout] 元数据错误: {e}")
+            print(f"[Scout] Metadata error: {e}")
         return None
 
     def _extract_landing_page_url(self, crossref_data) -> Optional[str]:
@@ -166,17 +166,17 @@ class ScoutAgent:
                 try:
                     return resp.json()
                 except Exception as e:
-                    print(f"[Scout] OpenAlex JSON 解析失败: {e}")
+                    print(f"[Scout] OpenAlex JSON parse failed: {e}")
                     return None
 
             # 可观测性：返回非 200 时给出原因（不会抛异常阻断 Crossref）
             if resp.status_code in (403, 429):
-                print(f"[Scout] OpenAlex 请求受限 HTTP {resp.status_code}（可能频率/网络限制）")
+                print(f"[Scout] OpenAlex rate-limited HTTP {resp.status_code}")
             else:
-                print(f"[Scout] OpenAlex 请求失败 HTTP {resp.status_code}")
+                print(f"[Scout] OpenAlex request failed HTTP {resp.status_code}")
             return None
         except Exception as e:
-            print(f"[Scout] OpenAlex 请求异常: {e}")
+            print(f"[Scout] OpenAlex request error: {e}")
             return None
 
         return None
@@ -358,10 +358,10 @@ class ScoutAgent:
                             author_dict["affiliation"] = str(aff_info)
                 
                 authors.append(author_dict)
-                print(f"[Scout] 作者 {author_dict['order']}: {author_dict['name']} ({author_dict['affiliation']})")
+                print(f"[Scout] Author {author_dict['order']}: {author_dict['name']} ({author_dict['affiliation']})")
         
         except Exception as e:
-            print(f"[Scout] 作者提取异常: {e}")
+            print(f"[Scout] Author extraction error: {e}")
         
-        print(f"[Scout] ✅ 从 Crossref 提取了 {len(authors)} 位作者")
+        print(f"[Scout] Extracted {len(authors)} authors from Crossref")
         return authors

@@ -1,8 +1,10 @@
-import streamlit as st
+import os
+
 import pandas as pd
+import streamlit as st
 from backend.orchestrator import Orchestrator
 from database.connection import get_db
-from database.models import Paper
+from database.models import Paper, PaperAuthor
 from database.settings import get_duplicate_strategy, set_duplicate_strategy
 from backend.utils.schemas import DuplicateStrategy
 from backend.utils.rag_memory import build_layout_fingerprint, retrieve_memory_hints
@@ -25,6 +27,8 @@ if "last_record" not in st.session_state:
     st.session_state.last_record = None
 if "memory_hints" not in st.session_state:
     st.session_state.memory_hints = []
+if "last_results" not in st.session_state:
+    st.session_state.last_results = []
 
 
 def _add_log(agent: str, message: str, confidence: float) -> None:
@@ -99,6 +103,57 @@ def _save_duplicate_strategy(strategy: DuplicateStrategy) -> None:
     db = next(get_db())
     try:
         set_duplicate_strategy(db, strategy)
+    finally:
+        db.close()
+
+
+def _visual_root() -> str:
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    return os.path.join(base_dir, "data", "visual_slices")
+
+
+def _doi_to_screenshot(doi: str) -> str | None:
+    if not doi:
+        return None
+    root = _visual_root()
+    safe_doi = str(doi).replace("/", "_")
+    path = os.path.join(root, f"{safe_doi}.png")
+    return path if os.path.exists(path) else None
+
+
+def _load_record_from_db(doi: str) -> dict | None:
+    if not doi:
+        return None
+    db = next(get_db())
+    try:
+        paper = db.query(Paper).filter(Paper.doi == doi).first()
+        if not paper:
+            return None
+        authors = db.query(PaperAuthor).filter(PaperAuthor.paper_doi == doi).order_by(PaperAuthor.rank).all()
+        author_rows = [
+            {
+                "name": a.raw_name,
+                "affiliation": a.raw_affiliation,
+                "affiliations": a.raw_affiliations,
+                "position": a.rank,
+                "is_corresponding": a.is_corresponding,
+                "is_co_first": a.is_co_first,
+                "source": "db",
+            }
+            for a in authors
+        ]
+        record = {
+            "doi": doi,
+            "title": paper.title,
+            "journal": paper.journal,
+            "status": paper.status,
+            "authors": author_rows,
+            "vision_authors": author_rows,
+        }
+        screenshot = _doi_to_screenshot(doi)
+        if screenshot:
+            record["screenshot_path"] = screenshot
+        return record
     finally:
         db.close()
 
@@ -259,6 +314,8 @@ if uploaded_file:
                         _add_log("Vision", "完成 OCR 解析与作者识别", vision_conf)
                         _add_log("Judge", f"完成裁决：{record.get('status', 'UNKNOWN')}", judge_conf)
 
+                    st.session_state.last_results = results
+
                 finally:
                     if current_strategy == DuplicateStrategy.PROMPT and has_existing_done and not remember:
                         _save_duplicate_strategy(DuplicateStrategy.PROMPT)
@@ -270,6 +327,55 @@ if uploaded_file:
                 else:
                     st.session_state.memory_hints = []
             end_card()
+
+            if st.session_state.last_results:
+                begin_card("处理结果", "点击 DOI 查看证据感知与决策提取结果。")
+                results_table = st.session_state.last_results
+                rows = []
+                for r in results_table:
+                    if not isinstance(r, dict):
+                        continue
+                    status = r.get("状态") or r.get("status")
+                    vision_text = ""
+                    if isinstance(r.get("vision_data"), dict):
+                        vision_text = str(r.get("vision_data", {}).get("text") or "")
+                    vision_flag = r.get("视觉解析") or ("有结果" if len(vision_text) > 5 else "无")
+                    rows.append(
+                        {
+                            "DOI": r.get("doi"),
+                            "标题": r.get("title"),
+                            "期刊": r.get("journal"),
+                            "状态": status,
+                            "视觉解析": vision_flag,
+                        }
+                    )
+
+                if rows:
+                    display_df = pd.DataFrame(rows)
+                    table_state = st.dataframe(
+                        display_df,
+                        width="stretch",
+                        on_select="rerun",
+                        selection_mode="single-row",
+                    )
+                    if table_state and table_state.selection.rows:
+                        row_idx = table_state.selection.rows[0]
+                        selected_doi = display_df.iloc[row_idx]["DOI"]
+                        selected_record = next(
+                            (r for r in results_table if isinstance(r, dict) and r.get("doi") == selected_doi),
+                            None,
+                        )
+                        if selected_record:
+                            if not selected_record.get("screenshot_path"):
+                                shot = _doi_to_screenshot(selected_doi)
+                                if shot:
+                                    selected_record["screenshot_path"] = shot
+                            st.session_state.last_record = selected_record
+                        else:
+                            db_record = _load_record_from_db(selected_doi)
+                            if db_record:
+                                st.session_state.last_record = db_record
+                end_card()
                 
     except Exception as e:
         st.error(f"错误：{e}")

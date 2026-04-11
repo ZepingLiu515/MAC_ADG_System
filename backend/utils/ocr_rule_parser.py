@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import re
 import unicodedata
+from difflib import SequenceMatcher
 from typing import Any, Dict, List, Optional
 
 
@@ -59,6 +60,84 @@ class OcrRuleParser:
         s = re.sub(r"[^a-z0-9\s\-\.]", " ", s)
         return self.normalize_ws(s)
 
+    def _normalize_ocr_text_for_match(self, text: str) -> str:
+        if not text:
+            return ""
+        t = str(text)
+        t = re.sub(r"([A-Z])([A-Z][a-z])", r"\1 \2", t)
+        t = re.sub(r"([a-z])([A-Z])", r"\1 \2", t)
+        t = re.sub(r"([A-Za-z])(\d)", r"\1 \2", t)
+        t = re.sub(r"(\d)([A-Za-z])", r"\1 \2", t)
+        return t
+
+    def normalize_affiliation_readability(self, s: str) -> str:
+        """Make affiliation strings more readable when OCR glues words.
+
+        This should be conservative: only insert spaces at obvious boundaries.
+        """
+        if not s:
+            return ""
+        t = str(s)
+        # split CamelCase and letter/digit boundaries
+        t = re.sub(r"([A-Z])([A-Z][a-z])", r"\1 \2", t)
+        t = re.sub(r"([a-z])([A-Z])", r"\1 \2", t)
+        t = re.sub(r"([A-Za-z])(\d)", r"\1 \2", t)
+        t = re.sub(r"(\d)([A-Za-z])", r"\1 \2", t)
+        # common OCR glue in affiliations: 'Unitof'/'Departmentof' etc.
+        t = re.sub(r"\b(Unit|Department|Faculty|School|Institute|University|Hospital|Center|Centre|Laboratory)(of)\b", r"\1 \2", t)
+        return self.normalize_ws(t)
+
+    def is_affiliation_garbled(self, s: str) -> bool:
+        """Heuristic: detect OCR-glued, low-quality affiliation strings.
+
+        We use this to decide whether to fallback to meta institutions.
+        """
+        if not s:
+            return True
+        t = self.normalize_ws(s)
+        if not t:
+            return True
+
+        # If it's a single huge token with no spaces, it's almost always OCR glue.
+        letters = sum(1 for ch in t if ch.isalpha())
+        spaces = t.count(" ")
+        if spaces == 0 and letters >= 30 and len(t) >= 40:
+            return True
+
+        # Extremely low vowel ratio is another strong signal.
+        if spaces == 0 and letters >= 25:
+            vowels = sum(1 for ch in t.lower() if ch in "aeiou")
+            if vowels / max(letters, 1) < 0.22:
+                return True
+
+        return False
+
+    def should_prefer_meta_affiliation(self, ocr_aff: str, meta_aff: str) -> bool:
+        """Decide whether to prefer meta institution over OCR-derived affiliation.
+
+        Meta institution strings are often cleaner (publisher-provided). We fall back to meta
+        when OCR text looks low-quality OR it diverges strongly from meta.
+        """
+        o = self.normalize_affiliation_readability(self.clean_affiliation_text(ocr_aff or ""))
+        m = self.normalize_affiliation_readability(self.clean_affiliation_text(meta_aff or ""))
+        if not m:
+            return False
+        if not o:
+            return True
+        if self.is_affiliation_garbled(o):
+            return True
+        # If OCR differs too much from meta, meta is usually the safer choice.
+        try:
+            o_key = self.normalize_for_match(o)
+            m_key = self.normalize_for_match(m)
+            if not o_key or not m_key:
+                return False
+            ratio = SequenceMatcher(None, o_key, m_key).ratio()
+            # keep OCR only when it's reasonably close to meta
+            return ratio < 0.72
+        except Exception:
+            return False
+
     def extract_affiliation_map(self, ocr_text: str) -> Dict[int, str]:
         """Extract affiliation list like '1. ...' from OCR text."""
         if not ocr_text:
@@ -97,7 +176,19 @@ class OcrRuleParser:
                 return False
             return True
 
+        stop_re = re.compile(
+            r"\b(Received|Accepted|Published|Abstract|Keywords|Citation|Cited By|PDF Downloads|"
+            r"Article Views|Download|Full Text|Tables|Figures|Related|Special Issue|Altmetric)\b",
+            re.I,
+        )
+        max_aff_len = 320
+
         for line in lines:
+            if current_num is not None and stop_re.search(line):
+                _flush()
+                current_num = None
+                buffer = []
+                continue
             if re.match(r"^\d{4}\b", line):
                 if current_num is not None:
                     buffer.append(line)
@@ -133,6 +224,10 @@ class OcrRuleParser:
 
             if current_num is not None:
                 buffer.append(line)
+                if len(self.normalize_ws(" ".join(buffer))) > max_aff_len:
+                    _flush()
+                    current_num = None
+                    buffer = []
 
         _flush()
         return aff_map
@@ -277,6 +372,14 @@ class OcrRuleParser:
         if not s:
             return ""
         t = self.normalize_ws(s)
+        stop_re = re.compile(
+            r"\b(Received|Accepted|Published|Abstract|Keywords|Citation|Cited By|PDF Downloads|"
+            r"Article Views|Download|Full Text|Tables|Figures|Related|Special Issue|Altmetric)\b",
+            re.I,
+        )
+        cut = stop_re.search(t)
+        if cut:
+            t = t[: cut.start()]
         t = re.sub(r"\bPDF\s+Downloads\s*\(\s*\d+\s*\)\b", "", t, flags=re.I)
         t = re.sub(r"\bMetrics\b", "", t, flags=re.I)
         t = re.sub(r"\b(Received|Accepted|Published)\b\s*[:\-]?\s*\w+.*$", "", t, flags=re.I)
@@ -352,9 +455,57 @@ class OcrRuleParser:
 
         # 2) Fallback: exact-ish match (useful for Chinese names)
         try:
-            return re.search(re.escape(name_literal), search_text, re.I)
+            m3 = re.search(re.escape(name_literal), search_text, re.I)
+            if m3:
+                return m3
         except Exception:
+            pass
+
+        # 3) Fuzzy fallback for glued OCR tokens
+        name_tokens = re.findall(r"[A-Za-z]+", name_literal)
+        if len(name_tokens) < 2:
             return None
+
+        class _Span:
+            def __init__(self, start: int, end: int):
+                self._start = start
+                self._end = end
+
+            def start(self) -> int:
+                return self._start
+
+            def end(self) -> int:
+                return self._end
+
+        slice_text = search_text[start_pos:end_pos]
+        matches = list(re.finditer(r"[A-Za-z]+", slice_text))
+        if not matches:
+            return None
+
+        tokens = [(m.group(), start_pos + m.start(), start_pos + m.end()) for m in matches]
+        target = " ".join(name_tokens).lower()
+        min_len = max(2, len(name_tokens) - 1)
+        max_len = min(len(name_tokens) + 1, 6)
+        best_ratio = 0.0
+        best_span: Optional[tuple[int, int]] = None
+        for i in range(len(tokens)):
+            for length in range(min_len, max_len + 1):
+                j = i + length - 1
+                if j >= len(tokens):
+                    break
+                if tokens[i][0][:1].lower() != name_tokens[0][:1].lower():
+                    continue
+                cand_tokens = [t[0] for t in tokens[i : j + 1]]
+                cand_text = " ".join(cand_tokens).lower()
+                if re.search(r"\b(university|hospital|department|institute|faculty|school|center|centre)\b", cand_text):
+                    continue
+                ratio = SequenceMatcher(None, target, cand_text).ratio()
+                if ratio > best_ratio:
+                    best_ratio = ratio
+                    best_span = (tokens[i][1], tokens[j][2])
+        if best_span and best_ratio >= 0.78:
+            return _Span(best_span[0], best_span[1])
+        return None
 
     def parse_authors_rule_based(
         self,
@@ -373,6 +524,7 @@ class OcrRuleParser:
         debug = str(os.getenv("OCR_RULE_DEBUG", "0")).strip().lower() in {"1", "true", "yes", "y"}
 
         search_text = self.strip_accents(ocr_text)
+        search_text = self._normalize_ocr_text_for_match(search_text)
         # 用于定位“同一行”范围，避免角标解析跨行吃到机构列表的 "1." 编号
         lines_raw = str(search_text).splitlines()
         line_starts: List[int] = []
@@ -399,6 +551,27 @@ class OcrRuleParser:
             end = line_starts[best + 1] - 1 if best + 1 < len(line_starts) else len(search_text)
             return (start, end)
 
+        def _cut_at_affiliation_list_start(chunk: str) -> str:
+            """Cut off text starting from a likely affiliation-list line.
+
+            We want to avoid the common OCR layout where author markers are read together with
+            the first affiliation entry (e.g. "... 4\n1 Department ..."), which would otherwise
+            be interpreted as markers [4, 1].
+
+            Important: do NOT cut when the next line is only a digit marker (e.g. "...\n4\n").
+            """
+
+            if not chunk:
+                return chunk
+
+            # Typical affiliation list starts with a number and then words.
+            # Accept optional '.' or ')', but don't require it.
+            # Require a letter after the number so we don't kill "\n4\n" marker-only lines.
+            m = re.search(r"\r?\n\s*\d{1,2}\s*(?:[\.)])?\s*[A-Za-z]", chunk)
+            if m:
+                return chunk[: m.start()]
+            return chunk
+
         author_names: List[str] = []
         if isinstance(scout_authors, list):
             for a in scout_authors:
@@ -412,6 +585,56 @@ class OcrRuleParser:
             blob = " ".join([x for x in top_lines if x])
             candidates = re.findall(r"\b[A-Z][A-Za-z\-\.]+\s+[A-Z][A-Za-z\-\.]+\b", blob)
             author_names = list(dict.fromkeys(candidates))
+
+        def _name_key(name: str) -> str:
+            return "".join(ch for ch in str(name or "").lower() if ch.isalnum())
+
+        def _build_marker_hint_map() -> Dict[str, List[int]]:
+            lines = [self.normalize_ws(x) for x in str(ocr_text).splitlines() if x and x.strip()]
+            aff_line_idx = None
+            for i, ln in enumerate(lines):
+                if re.match(r"^\d{1,2}\s*[\.\)]\s+", ln):
+                    aff_line_idx = i
+                    break
+            head_lines = lines[: aff_line_idx] if aff_line_idx is not None else lines[:12]
+            head_blob = " ".join(head_lines)
+            head_blob = self._normalize_ocr_text_for_match(head_blob)
+
+            known = set(aff_map.keys()) if aff_map else None
+            cand_pairs = re.findall(
+                r"([A-Za-z][A-Za-z\s\.\-]{1,50})\s*([0-9][0-9,;\s\-–]{0,12})",
+                head_blob,
+            )
+
+            out: Dict[str, List[int]] = {}
+            for raw_name, raw_nums in cand_pairs:
+                nums = self.split_marker_numbers(
+                    raw_nums,
+                    max_aff_num=max_aff_num,
+                    known_aff_nums=known,
+                    prefer_split_hint=None,
+                )
+                if not nums:
+                    continue
+
+                cleaned = self.normalize_for_match(raw_name)
+                if not cleaned or len(cleaned.split()) < 2:
+                    continue
+
+                best = None
+                best_score = 0.0
+                for name in author_names:
+                    score = SequenceMatcher(None, cleaned, self.normalize_for_match(name)).ratio()
+                    if score > best_score:
+                        best_score = score
+                        best = name
+                if best and best_score >= 0.72:
+                    key = _name_key(best)
+                    if key and key not in out:
+                        out[key] = nums
+            return out
+
+        marker_hint_map = _build_marker_hint_map()
 
         cofirst = bool(re.search(r"contributed\s+equally", search_text, re.I))
 
@@ -497,9 +720,7 @@ class OcrRuleParser:
                 # 但遇到机构列表的 "\n12." 这类编号就截断，避免粘连。
                 if not marker_numbers:
                     tail2 = search_text[span_end : span_end + 160]
-                    cut = re.search(r"\r?\n\s*\d{1,2}\s*[\.\)]\s*", tail2)
-                    if cut:
-                        tail2 = tail2[: cut.start()]
+                    tail2 = _cut_at_affiliation_list_start(tail2)
                     tail2 = tail2.lstrip(" \t\r\n")
                     collected2: List[str] = []
                     for ch in tail2:
@@ -530,9 +751,7 @@ class OcrRuleParser:
                         window = search_text[span_end : next_span[0]]
                     else:
                         window = search_text[span_end : span_end + 200]
-                    cut3 = re.search(r"\r?\n\s*\d{1,2}\s*[\.\)]\s*", window)
-                    if cut3:
-                        window = window[: cut3.start()]
+                    window = _cut_at_affiliation_list_start(window)
                     window = window.lstrip(" \t\r\n")
                     collected3: List[str] = []
                     collected_markers3: List[str] = []
@@ -567,10 +786,7 @@ class OcrRuleParser:
                     m3 = re.search(rf"{re.escape(name_literal)}\s*([\d][\d,;\s\-–]{{0,20}})", search_text, re.I)
                     if m3:
                         chunk = m3.group(1) or ""
-                        # 同样防止吃到机构列表的 "1." 起始编号
-                        cut2 = re.search(r"(?:\r?\n|\s)1\s*[\.\)]\s*", chunk)
-                        if cut2:
-                            chunk = chunk[: cut2.start()]
+                        chunk = _cut_at_affiliation_list_start(chunk)
                         known = set(aff_map.keys()) if aff_map else None
                         marker_numbers = self.split_marker_numbers(
                             chunk,
@@ -581,17 +797,33 @@ class OcrRuleParser:
                 except Exception:
                     pass
 
+            if not marker_numbers and marker_hint_map:
+                hinted = marker_hint_map.get(_name_key(name))
+                if hinted:
+                    marker_numbers = hinted
+
             affs: List[str] = []
             if marker_numbers:
-                if aff_map:
-                    for n in marker_numbers:
-                        if n in aff_map:
-                            affs.append(aff_map[n])
-                elif isinstance(meta_institutions, list) and meta_institutions:
-                    for n in marker_numbers:
-                        i = n - 1
-                        if 0 <= i < len(meta_institutions):
-                            affs.append(str(meta_institutions[i]).strip())
+                for n in marker_numbers:
+                    aff = ""
+                    meta_aff = ""
+                    if isinstance(meta_institutions, list) and meta_institutions:
+                        i_meta = n - 1
+                        if 0 <= i_meta < len(meta_institutions):
+                            meta_aff = str(meta_institutions[i_meta] or "").strip()
+
+                    if aff_map and n in aff_map:
+                        aff = self.clean_affiliation_text(aff_map.get(n) or "")
+                        aff = self.normalize_affiliation_readability(aff)
+
+                    # Prefer meta when OCR looks bad or diverges from meta strongly
+                    if meta_aff and self.should_prefer_meta_affiliation(aff, meta_aff):
+                        aff = self.normalize_affiliation_readability(self.clean_affiliation_text(meta_aff))
+
+                    if not aff and meta_aff:
+                        aff = self.normalize_affiliation_readability(self.clean_affiliation_text(meta_aff))
+                    if aff:
+                        affs.append(aff)
 
             uniq_affs: List[str] = []
             seen_aff = set()

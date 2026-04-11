@@ -36,11 +36,21 @@ def _read_dois_from_file(path: Path) -> List[str]:
 
 
 def main() -> int:
-    # Windows PowerShell 默认可能是 GBK，打印 emoji 会触发 UnicodeEncodeError。
-    # 这里强制 stdout/stderr 使用 UTF-8，避免因为日志导致脚本退出码=1。
+    # 统一解决 Windows 中文日志乱码：强制把控制台输出切到 UTF-8，并让 Python 也输出 UTF-8。
+    # 这样无论是 conda run 还是直接 python 运行，都能稳定显示中文；emoji 无法显示时用 ? 替代。
     try:
-        os.environ.setdefault("PYTHONUTF8", "1")
+        if os.name == "nt":
+            try:
+                import ctypes
+
+                ctypes.windll.kernel32.SetConsoleOutputCP(65001)
+                ctypes.windll.kernel32.SetConsoleCP(65001)
+            except Exception:
+                pass
+
         os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+        os.environ.setdefault("PYTHONUTF8", "1")
+
         if hasattr(sys.stdout, "reconfigure"):
             sys.stdout.reconfigure(encoding="utf-8", errors="replace")
         if hasattr(sys.stderr, "reconfigure"):
@@ -121,7 +131,41 @@ def main() -> int:
     else:
         out = results
 
-    print(json.dumps(out, ensure_ascii=False, indent=2))
+    def _repair_text(s: str) -> str:
+        if not isinstance(s, str) or not s:
+            return s
+
+        # Common Windows mojibake: UTF-8 bytes decoded as cp936/cp1252.
+        candidates = [s]
+        for enc in ("cp936", "cp1252", "latin1"):
+            try:
+                candidates.append(s.encode(enc, errors="strict").decode("utf-8", errors="strict"))
+            except Exception:
+                pass
+
+        def score(t: str) -> int:
+            # Higher is better.
+            if not t:
+                return -10**9
+            bad = t.count("\ufffd")  # replacement char
+            # Penalize CJK characters if the string is mostly Latin.
+            cjk = sum(1 for ch in t if "\u4e00" <= ch <= "\u9fff")
+            latin = sum(1 for ch in t if ("A" <= ch <= "Z") or ("a" <= ch <= "z"))
+            return latin * 2 - cjk * 3 - bad * 20 - len(t) // 500
+
+        best = max(candidates, key=score)
+        return best
+
+    def _repair_obj(obj):
+        if isinstance(obj, str):
+            return _repair_text(obj)
+        if isinstance(obj, list):
+            return [_repair_obj(x) for x in obj]
+        if isinstance(obj, dict):
+            return {(_repair_text(k) if isinstance(k, str) else k): _repair_obj(v) for k, v in obj.items()}
+        return obj
+
+    print(json.dumps(_repair_obj(out), ensure_ascii=False, indent=2))
     return 0
 
 

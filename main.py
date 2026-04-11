@@ -7,8 +7,7 @@ st.set_page_config(
 )
 
 with st.sidebar:
-    st.markdown("### ⧉ LOGO")
-    st.caption("MAC-ADG | 多智能体协同文档治理")
+    st.markdown("## MAC-ADG | 科研成果治理系统")
 
 page_home = st.Page("frontend/pages/home.py", title="系统概览", icon=":material/home:")
 page_data = st.Page("frontend/pages/1_Data_Management.py", title="数据管理", icon=":material/storage:")

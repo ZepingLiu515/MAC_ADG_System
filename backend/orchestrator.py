@@ -267,11 +267,50 @@ class Orchestrator:
                     va["affiliation"] = h_aff
 
             for key in ("emails", "has_mail_icon", "markers", "source"):
-                if key in ha and key not in va:
+                if key not in ha:
+                    continue
+                if key not in va:
                     va[key] = ha.get(key)
+                    continue
+                if key == "emails":
+                    if not va.get("emails"):
+                        va["emails"] = ha.get("emails") or []
+                elif key == "has_mail_icon":
+                    if not va.get("has_mail_icon"):
+                        va["has_mail_icon"] = bool(ha.get("has_mail_icon"))
+                elif key == "markers":
+                    if not va.get("markers"):
+                        va["markers"] = ha.get("markers") or ""
+                elif key == "source":
+                    if not va.get("source"):
+                        va["source"] = ha.get("source")
             if va.get("is_corresponding") and not va.get("corresponding_source") and ha.get("is_corresponding"):
                 va["corresponding_source"] = "hover"
             merged += 1
+
+        # If OCR/rule-based vision missed some authors entirely (common when author line is cropped
+        # or OCR misses small-font names), append hover/meta authors that are not present.
+        try:
+            existing_keys = {
+                _name_key(a.get("name"))
+                for a in vauthors
+                if isinstance(a, dict) and a.get("name")
+            }
+            added = 0
+            for ha in hover_authors:
+                if not isinstance(ha, dict) or not ha.get("name"):
+                    continue
+                hk = _name_key(ha.get("name"))
+                if not hk or hk in existing_keys:
+                    continue
+                # Keep hover as source of truth for missing authors
+                vauthors.append(ha)
+                existing_keys.add(hk)
+                added += 1
+            if added:
+                logger.info("[Orchestrator] Added %s missing hover authors", added)
+        except Exception:
+            pass
 
         if merged:
             vdata["authors"] = vauthors
@@ -290,6 +329,18 @@ class Orchestrator:
                 landing_page_url=scout_data.get("landing_page_url"),
             )
             payload["screenshot_path"] = screenshot_path
+
+            author_roi_path: Optional[str] = None
+            if self._env_truthy("PLAYWRIGHT_CAPTURE_AUTHOR_ROI", default="0"):
+                try:
+                    author_roi_path = self.webdriver.get_author_block_screenshot(
+                        doi,
+                        landing_page_url=scout_data.get("landing_page_url"),
+                        save_suffix="author_roi",
+                    )
+                except Exception as exc:
+                    logger.debug("[Orchestrator] Author ROI capture failed: %s", exc)
+            payload["author_roi_path"] = author_roi_path
 
             page_author_data: Optional[Dict[str, Any]] = None
             if os.getenv("PLAYWRIGHT_EXTRACT_AUTHOR_DETAILS", "1").strip() not in {
@@ -323,6 +374,7 @@ class Orchestrator:
                     doi=doi,
                     scout_authors=scout_data.get("authors"),
                     meta_institutions=meta_institutions,
+                    author_roi_path=author_roi_path,
                 )
                 payload["vision_data"] = vision_data
                 payload["vision_authors"] = vision_data.get("authors", [])

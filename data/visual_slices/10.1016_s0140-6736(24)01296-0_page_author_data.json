@@ -1,0 +1,894 @@
+{
+  "doi": "10.1016/s0140-6736(24)01296-0",
+  "final_url": "https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(24)01296-0/abstract",
+  "authors": [
+    {
+      "name": "Gill Livingston",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 1,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Jonathan Huntley",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 2,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Kathy Y Liu",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 3,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Sergi G Costafreda",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 4,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Geir Selbæk",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 5,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Suvarna Alladi",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 6,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "David Ames",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 7,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Sube Banerjee",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 8,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Alistair Burns",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 9,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Carol Brayne",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 10,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Nick C Fox",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 11,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Cleusa P Ferri",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 12,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Laura N Gitlin",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 13,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Robert Howard",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 14,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Helen C Kales",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 15,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Mika Kivimäki",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 16,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Eric B Larson",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 17,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Noeline Nakasujja",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 18,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Kenneth Rockwood",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 19,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Quincy Samus",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 20,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Kokoro Shirai",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 21,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Archana Singh-Manoux",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 22,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Lon S Schneider",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 23,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Sebastian Walsh",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 24,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Yao Yao",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 25,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Andrew Sommerlad",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 26,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    },
+    {
+      "name": "Naaheed Mukadam",
+      "affiliation": "Division of Psychiatry, University College London, London, UK",
+      "affiliations": [
+        "Division of Psychiatry, University College London, London, UK"
+      ],
+      "position": 27,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "††",
+      "affiliation_numbers": [
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ],
+      "source": "meta-guided"
+    }
+  ],
+  "raw_tooltips": [
+    {
+      "name": "Gill Livingston",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Jonathan Huntley",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Kathy Y Liu",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Sergi G Costafreda",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Geir Selbæk",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Suvarna Alladi",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "David Ames",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Sube Banerjee",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Alistair Burns",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Carol Brayne",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Nick C Fox",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Cleusa P Ferri",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Laura N Gitlin",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Robert Howard",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Helen C Kales",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Mika Kivimäki",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Eric B Larson",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Noeline Nakasujja",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Kenneth Rockwood",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Quincy Samus",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Kokoro Shirai",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Archana Singh-Manoux",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Lon S Schneider",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Sebastian Walsh",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Yao Yao",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Andrew Sommerlad",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    },
+    {
+      "name": "Naaheed Mukadam",
+      "tooltip": "",
+      "markers": "††",
+      "has_mail_icon": true,
+      "emails": [
+        "g.livingston@ucl.ac.uk",
+        "g.livingston@ucl.ac.uk"
+      ]
+    }
+  ],
+  "meta": {
+    "citation_author": [
+      "Gill Livingston",
+      "Jonathan Huntley",
+      "Kathy Y Liu",
+      "Sergi G Costafreda",
+      "Geir Selbæk",
+      "Suvarna Alladi",
+      "David Ames",
+      "Sube Banerjee",
+      "Alistair Burns",
+      "Carol Brayne",
+      "Nick C Fox",
+      "Cleusa P Ferri",
+      "Laura N Gitlin",
+      "Robert Howard",
+      "Helen C Kales",
+      "Mika Kivimäki",
+      "Eric B Larson",
+      "Noeline Nakasujja",
+      "Kenneth Rockwood",
+      "Quincy Samus",
+      "Kokoro Shirai",
+      "Archana Singh-Manoux",
+      "Lon S Schneider",
+      "Sebastian Walsh",
+      "Yao Yao",
+      "Andrew Sommerlad",
+      "Naaheed Mukadam"
+    ],
+    "citation_author_institution": [
+      "Division of Psychiatry, University College London, London, UK",
+      "Camden and Islington NHS Foundation Trust, London, UK",
+      "Department of Clinical and Biomedical Sciences, University of Exeter, Exeter, UK",
+      "Division of Psychiatry, University College London, London, UK",
+      "Division of Psychiatry, University College London, London, UK",
+      "Camden and Islington NHS Foundation Trust, London, UK",
+      "Norwegian National Advisory Unit on Ageing and Health, Vestfold Hospital Trust, Tønsberg, Norway",
+      "Institute of Clinical Medicine, Faculty of Medicine, University of Oslo, Oslo, Norway",
+      "Geriatric Department, Oslo University Hospital, Oslo, Norway",
+      "National Institute of Mental Health and Neurosciences, Bangalore, India",
+      "National Ageing Research Institute, Melbourne, VIC, Australia",
+      "University of Melbourne Academic Unit for Psychiatry of Old Age, Melbourne, VIC, Australia",
+      "Faculty of Medicine and Health Sciences, University of Nottingham, Nottingham, UK",
+      "University of Manchester, Manchester, UK",
+      "Cambridge Public Health, University of Cambridge, Cambridge, UK",
+      "The Dementia Research Centre, Department of Neurodegenerative Disease, University College London, London, UK",
+      "Health Technology Assessment Unit, Hospital Alemão Oswaldo Cruz, São Paulo, Brazil",
+      "Department of Psychiatry, Escola Paulista de Medicina, Universidade Federal de São Paulo, São Paulo, Brazil",
+      "College of Nursing and Health Professions, AgeWell Collaboratory, Drexel University, Philadelphia, PA, USA",
+      "Division of Psychiatry, University College London, London, UK",
+      "Camden and Islington NHS Foundation Trust, London, UK",
+      "Department of Psychiatry and Behavioral Sciences, UC Davis School of Medicine, University of California, Sacramento, CA, USA",
+      "Division of Psychiatry, University College London, London, UK",
+      "Department of Public Health, University of Helsinki, Helsinki, Finland",
+      "Department of Medicine, University of Washington, Seattle, WA, USA",
+      "Department of Psychiatry College of Health Sciences, Makerere University College of Health Sciences, Makerere University, Kampala City, Uganda",
+      "Centre for the Health Care of Elderly People, Geriatric Medicine, Dalhousie University, Halifax, NS, Canada",
+      "Department of Psychiatry and Behavioral Sciences, Johns Hopkins Bayview, Johns Hopkins University, Baltimore, MD, USA",
+      "Graduate School of Social and Environmental Medicine, Osaka University, Osaka, Japan",
+      "Division of Psychiatry, University College London, London, UK",
+      "Université Paris Cité, Inserm U1153, Paris, France",
+      "Department of Psychiatry and the Behavioural Sciences and Department of Neurology, Keck School of Medicine, University of Southern California, Los Angeles, CA, USA",
+      "Leonard Davis School of Gerontology, University of Southern California, Los Angeles, CA, USA",
+      "Cambridge Public Health, University of Cambridge, Cambridge, UK",
+      "China Center for Health Development Studies, School of Public Health, Peking University, Beijing, China",
+      "Key Laboratory of Epidemiology of Major Diseases (Peking University), Ministry of Education, Beijing, China",
+      "Division of Psychiatry, University College London, London, UK",
+      "Camden and Islington NHS Foundation Trust, London, UK",
+      "Division of Psychiatry, University College London, London, UK",
+      "Camden and Islington NHS Foundation Trust, London, UK"
+    ],
+    "citation_author_email": [
+      "g.livingston@ucl.ac.uk"
+    ]
+  }
+}

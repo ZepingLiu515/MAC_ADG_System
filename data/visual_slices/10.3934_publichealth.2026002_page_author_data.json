@@ -4,184 +4,246 @@
   "authors": [
     {
       "name": "Clara Lombardo",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Department “Scienze della Salute”, University of Catanzaro, Catanzaro, Italy",
+      "affiliations": [
+        "Department “Scienze della Salute”, University of Catanzaro, Catanzaro, Italy"
+      ],
       "position": 1,
       "is_corresponding": false,
       "is_co_first": false,
       "markers": "",
-      "affiliation_numbers": [],
+      "affiliation_numbers": [
+        1
+      ],
       "has_mail_icon": false,
       "emails": [],
       "source": "meta-guided"
     },
     {
       "name": "Cosimo Galletti",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Faculty of Medicine and Surgery, Kore University of Enna, Enna, Italy; Department of Dental Research Cell, Dr. D. Y. Patil Dental College & Hospital, Dr. D. Y. Patil Vidyapeeth (Deemed to be University), Pimpri, Pune, India",
+      "affiliations": [
+        "Faculty of Medicine and Surgery, Kore University of Enna, Enna, Italy",
+        "Department of Dental Research Cell, Dr. D. Y. Patil Dental College & Hospital, Dr. D. Y. Patil Vidyapeeth (Deemed to be University), Pimpri, Pune, India"
+      ],
       "position": 2,
       "is_corresponding": false,
       "is_co_first": false,
       "markers": "",
-      "affiliation_numbers": [],
+      "affiliation_numbers": [
+        2,
+        3
+      ],
       "has_mail_icon": false,
       "emails": [],
       "source": "meta-guided"
     },
     {
       "name": "Gabriele Cervino",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Department of Biomedical and Dental Sciences and Morphofunctional Imaging, University of Messina, Messina, Italy",
+      "affiliations": [
+        "Department of Biomedical and Dental Sciences and Morphofunctional Imaging, University of Messina, Messina, Italy"
+      ],
       "position": 3,
       "is_corresponding": false,
       "is_co_first": false,
       "markers": "",
-      "affiliation_numbers": [],
+      "affiliation_numbers": [
+        4
+      ],
       "has_mail_icon": false,
       "emails": [],
       "source": "meta-guided"
     },
     {
       "name": "Chiara La Barbiera",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Department “Scienze della Salute”, University of Catanzaro, Catanzaro, Italy",
+      "affiliations": [
+        "Department “Scienze della Salute”, University of Catanzaro, Catanzaro, Italy"
+      ],
       "position": 4,
-      "is_corresponding": true,
+      "is_corresponding": false,
       "is_co_first": false,
       "markers": "",
-      "affiliation_numbers": [],
-      "has_mail_icon": true,
-      "emails": [
-        "c.labarbiera@unicz.it"
+      "affiliation_numbers": [
+        1
       ],
+      "has_mail_icon": false,
+      "emails": [],
       "source": "meta-guided"
     },
     {
       "name": "Clemente Cedro",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Department of Biomedical and Dental Sciences and Morphofunctional Imaging, University of Messina, Messina, Italy",
+      "affiliations": [
+        "Department of Biomedical and Dental Sciences and Morphofunctional Imaging, University of Messina, Messina, Italy"
+      ],
       "position": 5,
       "is_corresponding": false,
       "is_co_first": false,
       "markers": "",
-      "affiliation_numbers": [],
+      "affiliation_numbers": [
+        4
+      ],
       "has_mail_icon": false,
       "emails": [],
       "source": "meta-guided"
     },
     {
       "name": "Gianluca Pandolfo",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Department of Biomedical and Dental Sciences and Morphofunctional Imaging, University of Messina, Messina, Italy",
+      "affiliations": [
+        "Department of Biomedical and Dental Sciences and Morphofunctional Imaging, University of Messina, Messina, Italy"
+      ],
       "position": 6,
       "is_corresponding": false,
       "is_co_first": false,
       "markers": "",
-      "affiliation_numbers": [],
+      "affiliation_numbers": [
+        4
+      ],
       "has_mail_icon": false,
       "emails": [],
       "source": "meta-guided"
     },
     {
       "name": "Maria Rosaria Anna Muscatello",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Department of Biomedical and Dental Sciences and Morphofunctional Imaging, University of Messina, Messina, Italy",
+      "affiliations": [
+        "Department of Biomedical and Dental Sciences and Morphofunctional Imaging, University of Messina, Messina, Italy"
+      ],
       "position": 7,
       "is_corresponding": false,
       "is_co_first": false,
       "markers": "",
-      "affiliation_numbers": [],
+      "affiliation_numbers": [
+        4
+      ],
       "has_mail_icon": false,
       "emails": [],
       "source": "meta-guided"
     },
     {
       "name": "Enrico Nastro Siniscalchi",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Faculty of Medicine and Surgery, Kore University of Enna, Enna, Italy",
+      "affiliations": [
+        "Faculty of Medicine and Surgery, Kore University of Enna, Enna, Italy"
+      ],
       "position": 8,
       "is_corresponding": false,
       "is_co_first": false,
       "markers": "",
-      "affiliation_numbers": [],
+      "affiliation_numbers": [
+        2
+      ],
       "has_mail_icon": false,
       "emails": [],
       "source": "meta-guided"
     },
     {
       "name": "Mario Nicolas De La Fuente",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Departamento de Medicina Córdoba, Universidad Católica de Córdoba, Argentina",
+      "affiliations": [
+        "Departamento de Medicina Córdoba, Universidad Católica de Córdoba, Argentina"
+      ],
       "position": 9,
       "is_corresponding": false,
       "is_co_first": false,
       "markers": "",
-      "affiliation_numbers": [],
+      "affiliation_numbers": [
+        5
+      ],
       "has_mail_icon": false,
       "emails": [],
       "source": "meta-guided"
     },
     {
       "name": "Sofia Munge",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Departamento de Medicina Córdoba, Universidad Católica de Córdoba, Argentina",
+      "affiliations": [
+        "Departamento de Medicina Córdoba, Universidad Católica de Córdoba, Argentina"
+      ],
       "position": 10,
       "is_corresponding": false,
       "is_co_first": false,
       "markers": "",
-      "affiliation_numbers": [],
+      "affiliation_numbers": [
+        5
+      ],
       "has_mail_icon": false,
       "emails": [],
       "source": "meta-guided"
     },
     {
       "name": "Sergio Parra García",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Department of Surgery, University of Salamanca, Salamanca, Spain",
+      "affiliations": [
+        "Department of Surgery, University of Salamanca, Salamanca, Spain"
+      ],
       "position": 11,
       "is_corresponding": false,
       "is_co_first": false,
       "markers": "",
-      "affiliation_numbers": [],
+      "affiliation_numbers": [
+        6
+      ],
       "has_mail_icon": false,
       "emails": [],
       "source": "meta-guided"
     },
     {
       "name": "Giuseppe Alberti",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Unit of Otorhinolaryngology, Department of Adult and Development Age Human Pathology “Gaetano Barresi”, University of Messina, Messina, Italy",
+      "affiliations": [
+        "Unit of Otorhinolaryngology, Department of Adult and Development Age Human Pathology “Gaetano Barresi”, University of Messina, Messina, Italy"
+      ],
       "position": 12,
       "is_corresponding": false,
       "is_co_first": false,
       "markers": "",
-      "affiliation_numbers": [],
+      "affiliation_numbers": [
+        7
+      ],
       "has_mail_icon": false,
       "emails": [],
       "source": "meta-guided"
     },
     {
       "name": "Daniele Portelli",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Unit of Otorhinolaryngology, Department of Adult and Development Age Human Pathology “Gaetano Barresi”, University of Messina, Messina, Italy",
+      "affiliations": [
+        "Unit of Otorhinolaryngology, Department of Adult and Development Age Human Pathology “Gaetano Barresi”, University of Messina, Messina, Italy"
+      ],
       "position": 13,
       "is_corresponding": false,
       "is_co_first": false,
       "markers": "",
-      "affiliation_numbers": [],
+      "affiliation_numbers": [
+        7
+      ],
       "has_mail_icon": false,
       "emails": [],
       "source": "meta-guided"
     },
     {
       "name": "Carmela Mento",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Department of Biomedical and Dental Sciences and Morphofunctional Imaging, University of Messina, Messina, Italy; Department “Scienze della Salute”, University of Catanzaro, Catanzaro, Italy; Faculty of Medicine and Surgery, Kore University of Enna, Enna, Italy; Department of Dental Research Cell, Dr. D. Y. Patil Dental College & Hospital, Dr. D. Y. Patil Vidyapeeth (Deemed to be University), Pimpri, Pune, India",
+      "affiliations": [
+        "Department of Biomedical and Dental Sciences and Morphofunctional Imaging, University of Messina, Messina, Italy",
+        "Department “Scienze della Salute”, University of Catanzaro, Catanzaro, Italy",
+        "Faculty of Medicine and Surgery, Kore University of Enna, Enna, Italy",
+        "Department of Dental Research Cell, Dr. D. Y. Patil Dental College & Hospital, Dr. D. Y. Patil Vidyapeeth (Deemed to be University), Pimpri, Pune, India"
+      ],
       "position": 14,
       "is_corresponding": false,
       "is_co_first": false,
       "markers": "",
-      "affiliation_numbers": [],
+      "affiliation_numbers": [
+        4,
+        1,
+        2,
+        3
+      ],
       "has_mail_icon": false,
       "emails": [],
       "source": "meta-guided"
@@ -213,10 +275,8 @@
       "name": "Chiara La Barbiera",
       "tooltip": "",
       "markers": "",
-      "has_mail_icon": true,
-      "emails": [
-        "c.labarbiera@unicz.it"
-      ]
+      "has_mail_icon": false,
+      "emails": []
     },
     {
       "name": "Clemente Cedro",

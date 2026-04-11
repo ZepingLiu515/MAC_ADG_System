@@ -1,0 +1,140 @@
+{
+  "doi": "10.1038/s41467-023-40854-1",
+  "final_url": "https://www.nature.com/articles/s41467-023-40854-1",
+  "authors": [
+    {
+      "name": "Ha, Chan Soo",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 1,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Yao, Desheng",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 2,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Xu, Zhenpeng",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 3,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Liu, Chenang",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 4,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Liu, Han",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 5,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Elkins, Daniel",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 6,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Kile, Matthew",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 7,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Deshpande, Vikram",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 8,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Kong, Zhenyu",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 9,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Bauchy, Mathieu",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 10,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Zheng, Xiaoyu (Rayne)",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 11,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    }
+  ],
+  "raw_tooltips": [],
+  "meta": {
+    "citation_author": [
+      "Ha, Chan Soo",
+      "Yao, Desheng",
+      "Xu, Zhenpeng",
+      "Liu, Chenang",
+      "Liu, Han",
+      "Elkins, Daniel",
+      "Kile, Matthew",
+      "Deshpande, Vikram",
+      "Kong, Zhenyu",
+      "Bauchy, Mathieu",
+      "Zheng, Xiaoyu (Rayne)"
+    ],
+    "citation_author_institution": [
+      "Department of Mechanical Engineering, Virginia Tech, Blacksburg, USA",
+      "Department of Material Science and Engineering, University of California, Berkeley, USA",
+      "Department of Civil and Environmental Engineering, University of California, Los Angeles, USA",
+      "Department of Material Science and Engineering, University of California, Berkeley, USA",
+      "Department of Civil and Environmental Engineering, University of California, Los Angeles, USA",
+      "Industrial Engineering and Management, Oklahoma State University, Stillwater, USA",
+      "Department of Computer Science and Technology, Sichuan University, Chengdu, China",
+      "Department of Mechanical Engineering, Virginia Tech, Blacksburg, USA",
+      "Grado Department of Industrial and Systems Engineering, Virginia Tech, Blacksburg, USA",
+      "Department of Mechanical Engineering, Virginia Tech, Blacksburg, USA",
+      "Department of Engineering, University of Cambridge, Cambridge, UK",
+      "Grado Department of Industrial and Systems Engineering, Virginia Tech, Blacksburg, USA",
+      "Department of Civil and Environmental Engineering, University of California, Los Angeles, USA",
+      "Department of Mechanical Engineering, Virginia Tech, Blacksburg, USA",
+      "Department of Material Science and Engineering, University of California, Berkeley, USA",
+      "Department of Civil and Environmental Engineering, University of California, Los Angeles, USA"
+    ],
+    "citation_author_email": []
+  }
+}

@@ -126,6 +126,7 @@ class VisionAgent:
         doi: Optional[str] = None,
         scout_authors: Optional[List[Dict[str, Any]]] = None,
         meta_institutions: Optional[List[str]] = None,
+        author_roi_path: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         兼容旧接口：对已有截图执行 OCR+解析，返回与 process 相同的数据结构。
@@ -136,13 +137,72 @@ class VisionAgent:
 
         # 回填 DOI，便于 mock/fallback 路由
         doi_for_analysis = doi or os.path.splitext(os.path.basename(image_path))[0].replace('_', '/')
+        def _author_quality_score(authors: Any) -> int:
+            if not isinstance(authors, list) or not authors:
+                return 0
+            with_aff = 0
+            with_nums = 0
+            for a in authors:
+                if not isinstance(a, dict):
+                    continue
+                aff = str(a.get("affiliation") or "").strip()
+                affs = a.get("affiliations")
+                nums = a.get("affiliation_numbers")
+                if aff:
+                    with_aff += 1
+                elif isinstance(affs, list) and any(str(x).strip() for x in affs):
+                    with_aff += 1
+                if isinstance(nums, list) and any(isinstance(x, int) and x > 0 for x in nums):
+                    with_nums += 1
+            # Strongly prefer having the right number of authors; then prefer richer structure.
+            return len(authors) * 10 + with_aff * 2 + with_nums
+
         try:
-            return self._ocr_and_parse(
+            base = self._ocr_and_parse(
                 image_path,
                 doi_for_analysis,
                 scout_authors=scout_authors,
                 meta_institutions=meta_institutions,
             )
+
+            base["author_roi_path"] = author_roi_path if author_roi_path else None
+            base["author_roi_used"] = False
+
+            if (
+                author_roi_path
+                and os.path.exists(author_roi_path)
+                and os.getenv("VISION_ENABLE_AUTHOR_ROI", "1").strip().lower() not in {"0", "false", "no"}
+            ):
+                base_authors = base.get("authors") or []
+                scout_len = len(scout_authors or [])
+
+                force_roi = os.getenv("VISION_FORCE_AUTHOR_ROI", "0").strip().lower() not in {
+                    "0",
+                    "false",
+                    "no",
+                    "",
+                }
+
+                # Only spend the extra OCR pass if the base result looks weak.
+                base_looks_weak = (not base_authors) or (
+                    scout_len > 0 and isinstance(base_authors, list) and len(base_authors) < max(1, int(scout_len * 0.6))
+                )
+
+                if base_looks_weak or force_roi:
+                    roi = self._ocr_and_parse(
+                        author_roi_path,
+                        doi_for_analysis,
+                        scout_authors=scout_authors,
+                        meta_institutions=meta_institutions,
+                    )
+                    roi_authors = roi.get("authors") or []
+                    if _author_quality_score(roi_authors) > _author_quality_score(base_authors):
+                        base["authors"] = roi_authors
+                        base["author_roi_used"] = True
+                        # Keep the full-page text as evidence, but expose ROI text for debugging.
+                        base["author_roi_text"] = roi.get("text")
+
+            return base
         except Exception as exc:
             logger.exception("[Vision] analyze_screenshot failed: %s", exc)
             return {
@@ -274,9 +334,45 @@ class VisionAgent:
             scout_authors=scout_authors,
             meta_institutions=meta_institutions,
         )
+
+        aff_map = self.ocr_rule_parser.extract_affiliation_map(ocr_text)
+
+        # JMIR-like pages often show affiliation details under an 'Authors' tab.
+        # If we only captured the article top, we may have superscript numbers but no affiliation list,
+        # which leads Judge to output Unknown. Do one best-effort retry to capture the Authors section.
+        if not aff_map:
+            low = ocr_text.lower()
+            looks_like_jmir = ("jmir" in low) or ("j med internet res" in low)
+            has_superscripts = bool(re.search(r"\b\w+\s*\d+(?:\s*,\s*\d+)*\b", ocr_text))
+            if looks_like_jmir and has_superscripts:
+                try:
+                    logger.info("[Vision] No affiliation map; retrying JMIR Authors section capture")
+                    alt_path = self.webdriver.get_webpage_screenshot(
+                        doi,
+                        full_page=True,
+                        section="authors",
+                        save_suffix="authors_full",
+                    )
+                    if alt_path and os.path.exists(alt_path):
+                        alt_text, alt_items = self._extract_text_and_boxes_by_ocr(alt_path)
+                        if not alt_text:
+                            alt_text = self._extract_text_by_ocr(alt_path)
+                            alt_items = []
+                        if alt_text:
+                            self._save_ocr_sidecar(alt_path, doi, alt_text, alt_items, None)
+                            aff_map2 = self.ocr_rule_parser.extract_affiliation_map(alt_text)
+                            if aff_map2:
+                                aff_map = aff_map2
+                                # Keep full_text as combined evidence (top + authors tab)
+                                ocr_text = ocr_text + "\n\n" + alt_text
+                except Exception as exc:
+                    logger.debug("[Vision] JMIR Authors retry failed: %s", exc)
         
         return {
             "text": ocr_text[:500] + "..." if len(ocr_text) > 500 else ocr_text,
+            "full_text": ocr_text,
+            "affiliation_map": aff_map,
+            "meta_institutions": meta_institutions or [],
             "image_path": image_path,
             "authors": authors
         }

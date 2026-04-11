@@ -1,0 +1,46 @@
+{
+  "doi": "10.15585/mmwr.ss7202a1",
+  "final_url": "https://www.cdc.gov/mmwr/volumes/72/ss/ss7202a1.htm?s_cid=ss7202a1_w",
+  "authors": [
+    {
+      "name": "Matthew J. Maenner",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 1,
+      "is_corresponding": true,
+      "is_co_first": false,
+      "markers": "†††††††††††††††††††",
+      "affiliation_numbers": [
+        8,
+        11,
+        3,
+        2,
+        72,
+        1
+      ],
+      "has_mail_icon": true,
+      "emails": [
+        "xde8@cdc.gov"
+      ],
+      "source": "meta-guided"
+    }
+  ],
+  "raw_tooltips": [
+    {
+      "name": "Matthew J. Maenner",
+      "tooltip": "",
+      "markers": "†††††††††††††††††††",
+      "has_mail_icon": true,
+      "emails": [
+        "xde8@cdc.gov"
+      ]
+    }
+  ],
+  "meta": {
+    "citation_author": [
+      "Matthew J. Maenner"
+    ],
+    "citation_author_institution": [],
+    "citation_author_email": []
+  }
+}

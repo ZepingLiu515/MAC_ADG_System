@@ -1,0 +1,170 @@
+{
+  "doi": "10.1038/s41467-023-42720-6",
+  "final_url": "https://www.nature.com/articles/s41467-023-42720-6",
+  "authors": [
+    {
+      "name": "Wang, Shengdong",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 1,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Xie, Zhipeng",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 2,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Zhu, Da",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 3,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Fu, Shuai",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 4,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Wu, Yishi",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 5,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Yu, Hongling",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 6,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Lu, Chuangye",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 7,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Zhou, Panke",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 8,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Bonn, Mischa",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 9,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Wang, Hai I.",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 10,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Liao, Qing",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 11,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Xu, Hong",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 12,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Chen, Xiong",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 13,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    },
+    {
+      "name": "Gu, Cheng",
+      "affiliation": "",
+      "affiliations": [],
+      "position": 14,
+      "is_corresponding": false,
+      "is_co_first": false,
+      "source": "meta:citation_author"
+    }
+  ],
+  "raw_tooltips": [],
+  "meta": {
+    "citation_author": [
+      "Wang, Shengdong",
+      "Xie, Zhipeng",
+      "Zhu, Da",
+      "Fu, Shuai",
+      "Wu, Yishi",
+      "Yu, Hongling",
+      "Lu, Chuangye",
+      "Zhou, Panke",
+      "Bonn, Mischa",
+      "Wang, Hai I.",
+      "Liao, Qing",
+      "Xu, Hong",
+      "Chen, Xiong",
+      "Gu, Cheng"
+    ],
+    "citation_author_institution": [
+      "College of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, Chengdu, People’s Republic of China",
+      "State Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, Guangzhou, People’s Republic of China",
+      "State Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, Fuzhou, People’s Republic of China",
+      "Institute of Nuclear and New Energy Technology, Tsinghua University, Beijing, People’s Republic of China",
+      "Max Planck Institute for Polymer Research, Ackermannweg 10, Mainz, Germany",
+      "Beijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, Beijing, People’s Republic of China",
+      "State Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, Fuzhou, People’s Republic of China",
+      "State Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, Guangzhou, People’s Republic of China",
+      "State Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, Fuzhou, People’s Republic of China",
+      "Max Planck Institute for Polymer Research, Ackermannweg 10, Mainz, Germany",
+      "Max Planck Institute for Polymer Research, Ackermannweg 10, Mainz, Germany",
+      "Nanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Utrecht, The Netherlands",
+      "Beijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, Beijing, People’s Republic of China",
+      "Institute of Nuclear and New Energy Technology, Tsinghua University, Beijing, People’s Republic of China",
+      "State Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, Fuzhou, People’s Republic of China",
+      "College of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, Chengdu, People’s Republic of China"
+    ],
+    "citation_author_email": []
+  }
+}

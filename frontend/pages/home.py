@@ -43,9 +43,24 @@ if ui_cfg.get("show_stats", True):
     )
 
 
-def _find_latest_screenshot() -> Optional[str]:
+def _visual_root() -> str:
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    root = os.path.join(base_dir, "data", "visual_slices")
+    return os.path.join(base_dir, "data", "visual_slices")
+
+
+def _doi_to_screenshot(doi: str) -> Optional[str]:
+    if not doi:
+        return None
+    root = _visual_root()
+    safe_doi = str(doi).replace("/", "_")
+    path = os.path.join(root, f"{safe_doi}.png")
+    if os.path.exists(path):
+        return path
+    return None
+
+
+def _find_latest_screenshot() -> Optional[str]:
+    root = _visual_root()
     if not os.path.exists(root):
         return None
     candidates = [
@@ -76,9 +91,13 @@ def _render_visual_panel() -> None:
     if not ui_cfg.get("show_visual_panel", True):
         return
     begin_card("证据感知区（视觉）", "展示 OCR 截图与原始文本，便于人工核验。")
-    screenshot = _find_latest_screenshot()
+    latest = recent_papers[0] if recent_papers else None
+    screenshot = _doi_to_screenshot(latest.doi) if latest else None
+    if not screenshot:
+        screenshot = _find_latest_screenshot()
     if screenshot:
-        st.image(screenshot, caption="最新截图", width="stretch")
+        caption = f"当前论文截图：{latest.doi}" if latest else "最新截图"
+        st.image(screenshot, caption=caption, width="stretch")
         if ui_cfg.get("show_ocr_text", True):
             ocr_text = _load_sidecar_text(screenshot)
             if ocr_text:

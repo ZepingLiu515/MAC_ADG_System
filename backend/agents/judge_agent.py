@@ -48,6 +48,14 @@ class JudgeAgent:
         if not isinstance(vision_data, dict):
             return {}
 
+        meta_list = vision_data.get("meta_institutions")
+        meta_map: Dict[int, str] = {}
+        if isinstance(meta_list, list) and meta_list:
+            for idx, val in enumerate(meta_list, start=1):
+                s = str(val or "").strip()
+                if s:
+                    meta_map[idx] = s
+
         raw_map = vision_data.get("affiliation_map") or vision_data.get("affiliation_dict")
         if isinstance(raw_map, dict):
             cleaned: Dict[int, str] = {}
@@ -58,13 +66,23 @@ class JudgeAgent:
                     continue
                 text = str(val or "").strip()
                 if text:
-                    cleaned[num] = text
+                    text = self.ocr_rule_parser.clean_affiliation_text(text)
+                    text = self.ocr_rule_parser.normalize_affiliation_readability(text)
+                    if num in meta_map and self.ocr_rule_parser.should_prefer_meta_affiliation(text, meta_map[num]):
+                        text = self.ocr_rule_parser.normalize_affiliation_readability(
+                            self.ocr_rule_parser.clean_affiliation_text(meta_map[num])
+                        )
+                    if text:
+                        cleaned[num] = text
             if cleaned:
                 return cleaned
 
         text = vision_data.get("full_text") or vision_data.get("ocr_text") or vision_data.get("text") or ""
         if text:
             return self.ocr_rule_parser.extract_affiliation_map(text)
+
+        if meta_map:
+            return meta_map
         return {}
 
     def _enforce_affiliation_mapping(self, authors: List[dict], vision_data: dict) -> None:
@@ -108,13 +126,16 @@ class JudgeAgent:
                 else:
                     missing += 1
 
+            existing_aff = str(author.get("affiliation") or "").strip()
+            has_existing = bool(existing_aff) and existing_aff.lower() != "unknown"
+
             if mapped:
                 author["affiliations"] = mapped
                 author["affiliation"] = "; ".join(mapped)
                 author["affiliation_map_status"] = "partial" if missing else "mapped"
             else:
                 author["affiliation_map_status"] = "missing"
-                if strict:
+                if strict and not has_existing:
                     author["affiliations"] = []
                     author["affiliation"] = "Unknown"
                     logger.debug("[Judge] Missing affiliation map for %s", author.get("name"))
