@@ -256,9 +256,27 @@ class Orchestrator:
             if not ha:
                 continue
 
-            for flag in ("is_corresponding", "is_co_first"):
-                if flag in ha:
-                    va[flag] = bool(va.get(flag)) or bool(ha.get(flag))
+            # Co-first can be OR-merged.
+            if "is_co_first" in ha:
+                va["is_co_first"] = bool(va.get("is_co_first")) or bool(ha.get("is_co_first"))
+
+            # Corresponding author: allow mail-icon OR '*' marker (PDF/screenshot cases).
+            hover_markers = str(ha.get("markers") or "")
+            hover_star = "*" in hover_markers
+            hover_corr = bool(ha.get("has_mail_icon")) or hover_star or bool(ha.get("is_corresponding"))
+
+            if "has_mail_icon" in ha:
+                va["has_mail_icon"] = bool(va.get("has_mail_icon")) or bool(ha.get("has_mail_icon"))
+            if "markers" in ha and not va.get("markers"):
+                va["markers"] = ha.get("markers")
+
+            if hover_corr:
+                va["is_corresponding"] = bool(va.get("is_corresponding")) or hover_corr
+                if not va.get("corresponding_source"):
+                    va["corresponding_source"] = "hover_icon" if bool(ha.get("has_mail_icon")) else ("hover_star" if hover_star else "hover")
+            elif "is_corresponding" in ha:
+                # Fallback: OR-merge when hover provides explicit flag but no strong evidence.
+                va["is_corresponding"] = bool(va.get("is_corresponding")) or bool(ha.get("is_corresponding"))
 
             v_aff = str(va.get("affiliation") or "").strip()
             h_aff = str(ha.get("affiliation") or "").strip()
@@ -266,16 +284,13 @@ class Orchestrator:
                 if h_aff and h_aff.lower() != "unknown":
                     va["affiliation"] = h_aff
 
-            for key in ("emails", "has_mail_icon", "markers", "source"):
+            for key in ("has_mail_icon", "markers", "source"):
                 if key not in ha:
                     continue
                 if key not in va:
                     va[key] = ha.get(key)
                     continue
-                if key == "emails":
-                    if not va.get("emails"):
-                        va["emails"] = ha.get("emails") or []
-                elif key == "has_mail_icon":
+                if key == "has_mail_icon":
                     if not va.get("has_mail_icon"):
                         va["has_mail_icon"] = bool(ha.get("has_mail_icon"))
                 elif key == "markers":
@@ -284,8 +299,7 @@ class Orchestrator:
                 elif key == "source":
                     if not va.get("source"):
                         va["source"] = ha.get("source")
-            if va.get("is_corresponding") and not va.get("corresponding_source") and ha.get("is_corresponding"):
-                va["corresponding_source"] = "hover"
+
             merged += 1
 
         # If OCR/rule-based vision missed some authors entirely (common when author line is cropped
@@ -317,6 +331,29 @@ class Orchestrator:
             record["vision_data"] = vdata
             record["vision_authors"] = vauthors
             logger.info("[Orchestrator] Hover signals merged into %s authors", merged)
+
+    def _hover_has_complete_affiliations(
+        self, page_author_data: Optional[Dict[str, Any]], scout_authors: Optional[List[Dict[str, Any]]]
+    ) -> bool:
+        if not isinstance(page_author_data, dict):
+            return False
+        authors = page_author_data.get("authors")
+        if not isinstance(authors, list) or not authors:
+            return False
+
+        scout_len = len(scout_authors) if isinstance(scout_authors, list) else 0
+        if scout_len and len(authors) != scout_len:
+            return False
+
+        for a in authors:
+            if not isinstance(a, dict):
+                return False
+            affs = a.get("affiliations")
+            aff = str(a.get("affiliation") or "").strip()
+            has_affs = isinstance(affs, list) and any(str(x).strip() for x in affs)
+            if not (has_affs or aff):
+                return False
+        return True
 
     def _run_perception_state(self, doi: str, scout_data: Dict[str, Any]) -> AgentResult:
         """PERCEPTION: capture screenshot, hover signals, and OCR-based vision data."""
@@ -369,13 +406,35 @@ class Orchestrator:
                     if isinstance(mi, list) and mi:
                         meta_institutions = mi
 
-                vision_data = self.vision.analyze_screenshot(
-                    screenshot_path,
-                    doi=doi,
-                    scout_authors=scout_data.get("authors"),
-                    meta_institutions=meta_institutions,
-                    author_roi_path=author_roi_path,
-                )
+                # If hover/click already produced complete affiliations for all authors, skip slow OCR.
+                if self._env_truthy("VISION_SKIP_OCR_IF_HOVER_COMPLETE", default="1") and self._hover_has_complete_affiliations(
+                    page_author_data, scout_data.get("authors")
+                ):
+                    hover_authors = page_author_data.get("authors") or []
+                    raw_tooltips = page_author_data.get("raw_tooltips") or []
+                    tooltip_text = "\n".join(
+                        [
+                            t.get("tooltip", "")
+                            for t in raw_tooltips
+                            if isinstance(t, dict) and t.get("tooltip")
+                        ]
+                    )
+                    vision_data = {
+                        "text": tooltip_text,
+                        "image_path": screenshot_path,
+                        "authors": hover_authors,
+                        "source": "hover_skip_ocr",
+                        "ocr_skipped": True,
+                    }
+                    payload["vision_skipped"] = True
+                else:
+                    vision_data = self.vision.analyze_screenshot(
+                        screenshot_path,
+                        doi=doi,
+                        scout_authors=scout_data.get("authors"),
+                        meta_institutions=meta_institutions,
+                        author_roi_path=author_roi_path,
+                    )
                 payload["vision_data"] = vision_data
                 payload["vision_authors"] = vision_data.get("authors", [])
             else:

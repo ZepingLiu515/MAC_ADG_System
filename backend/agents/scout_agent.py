@@ -1,3 +1,4 @@
+import logging
 import os
 import requests
 from requests.adapters import HTTPAdapter
@@ -9,6 +10,8 @@ from typing import Any, Dict, List, Optional
 OPENALEX_TIMEOUT = 20
 OPENALEX_RETRIES = 2
 
+logger = logging.getLogger(__name__)
+
 class ScoutAgent:
     """
     [Scout Agent V3.0 - 仅元数据]
@@ -19,7 +22,10 @@ class ScoutAgent:
         pass
 
     def run(self, doi):
-        print(f"[Scout] Fetching metadata for DOI: {doi}")
+        try:
+            logger.info("[Scout] Fetching metadata for DOI: %s", doi)
+        except Exception:
+            pass
         metadata = self.fetch_metadata(doi)
 
         if not metadata:
@@ -88,7 +94,10 @@ class ScoutAgent:
                     "openalex_used": openalex_used,
                 }
         except Exception as e:
-            print(f"[Scout] Metadata error: {e}")
+            try:
+                logger.warning("[Scout] Metadata error: %s", e)
+            except Exception:
+                pass
         return None
 
     def _extract_landing_page_url(self, crossref_data) -> Optional[str]:
@@ -166,17 +175,29 @@ class ScoutAgent:
                 try:
                     return resp.json()
                 except Exception as e:
-                    print(f"[Scout] OpenAlex JSON parse failed: {e}")
+                    try:
+                        logger.debug("[Scout] OpenAlex JSON parse failed: %s", e)
+                    except Exception:
+                        pass
                     return None
 
             # 可观测性：返回非 200 时给出原因（不会抛异常阻断 Crossref）
             if resp.status_code in (403, 429):
-                print(f"[Scout] OpenAlex rate-limited HTTP {resp.status_code}")
+                try:
+                    logger.info("[Scout] OpenAlex rate-limited HTTP %s", resp.status_code)
+                except Exception:
+                    pass
             else:
-                print(f"[Scout] OpenAlex request failed HTTP {resp.status_code}")
+                try:
+                    logger.debug("[Scout] OpenAlex request failed HTTP %s", resp.status_code)
+                except Exception:
+                    pass
             return None
         except Exception as e:
-            print(f"[Scout] OpenAlex request error: {e}")
+            try:
+                logger.debug("[Scout] OpenAlex request error: %s", e)
+            except Exception:
+                pass
             return None
 
         return None
@@ -358,10 +379,25 @@ class ScoutAgent:
                             author_dict["affiliation"] = str(aff_info)
                 
                 authors.append(author_dict)
-                print(f"[Scout] Author {author_dict['order']}: {author_dict['name']} ({author_dict['affiliation']})")
+                # Avoid noisy console prints; keep details in logs if needed.
+                try:
+                    logger.debug(
+                        "[Scout] Author %s: %s (%s)",
+                        author_dict.get("order"),
+                        author_dict.get("name"),
+                        author_dict.get("affiliation"),
+                    )
+                except Exception:
+                    pass
         
         except Exception as e:
-            print(f"[Scout] Author extraction error: {e}")
+            try:
+                logger.exception("[Scout] Author extraction error: %s", e)
+            except Exception:
+                pass
         
-        print(f"[Scout] Extracted {len(authors)} authors from Crossref")
+        try:
+            logger.info("[Scout] Extracted %s authors from Crossref", len(authors))
+        except Exception:
+            pass
         return authors

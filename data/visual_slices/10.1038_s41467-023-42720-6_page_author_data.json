@@ -4,132 +4,328 @@
   "authors": [
     {
       "name": "Wang, Shengdong",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "College of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China; State Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China",
+      "affiliations": [
+        "College of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China",
+        "State Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China"
+      ],
       "position": 1,
       "is_corresponding": false,
-      "is_co_first": false,
-      "source": "meta:citation_author"
+      "is_co_first": true,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
     },
     {
       "name": "Xie, Zhipeng",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "State Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China",
+      "affiliations": [
+        "State Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China"
+      ],
       "position": 2,
       "is_corresponding": false,
-      "is_co_first": false,
-      "source": "meta:citation_author"
+      "is_co_first": true,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
     },
     {
       "name": "Zhu, Da",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Institute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China",
+      "affiliations": [
+        "Institute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China"
+      ],
       "position": 3,
       "is_corresponding": false,
       "is_co_first": false,
-      "source": "meta:citation_author"
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
     },
     {
       "name": "Fu, Shuai",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Max Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany",
+      "affiliations": [
+        "Max Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany"
+      ],
       "position": 4,
       "is_corresponding": false,
       "is_co_first": false,
-      "source": "meta:citation_author"
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
     },
     {
       "name": "Wu, Yishi",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Beijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China",
+      "affiliations": [
+        "Beijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China"
+      ],
       "position": 5,
       "is_corresponding": false,
       "is_co_first": false,
-      "source": "meta:citation_author"
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
     },
     {
       "name": "Yu, Hongling",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "State Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China",
+      "affiliations": [
+        "State Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China"
+      ],
       "position": 6,
       "is_corresponding": false,
       "is_co_first": false,
-      "source": "meta:citation_author"
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
     },
     {
       "name": "Lu, Chuangye",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "State Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China",
+      "affiliations": [
+        "State Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China"
+      ],
       "position": 7,
       "is_corresponding": false,
       "is_co_first": false,
-      "source": "meta:citation_author"
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
     },
     {
       "name": "Zhou, Panke",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "State Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China",
+      "affiliations": [
+        "State Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China"
+      ],
       "position": 8,
       "is_corresponding": false,
       "is_co_first": false,
-      "source": "meta:citation_author"
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
     },
     {
       "name": "Bonn, Mischa",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Max Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany",
+      "affiliations": [
+        "Max Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany"
+      ],
       "position": 9,
       "is_corresponding": false,
       "is_co_first": false,
-      "source": "meta:citation_author"
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
     },
     {
       "name": "Wang, Hai I.",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Max Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany",
+      "affiliations": [
+        "Max Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany"
+      ],
       "position": 10,
       "is_corresponding": false,
       "is_co_first": false,
-      "source": "meta:citation_author"
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
     },
     {
       "name": "Liao, Qing",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Beijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China",
+      "affiliations": [
+        "Beijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China"
+      ],
       "position": 11,
       "is_corresponding": false,
       "is_co_first": false,
-      "source": "meta:citation_author"
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
     },
     {
       "name": "Xu, Hong",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "Institute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China",
+      "affiliations": [
+        "Institute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China"
+      ],
       "position": 12,
       "is_corresponding": false,
       "is_co_first": false,
-      "source": "meta:citation_author"
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": false,
+      "emails": [],
+      "source": "meta-guided"
     },
     {
       "name": "Chen, Xiong",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "State Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China",
+      "affiliations": [
+        "State Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China"
+      ],
       "position": 13,
-      "is_corresponding": false,
-      "is_co_first": false,
-      "source": "meta:citation_author"
+      "is_corresponding": true,
+      "is_co_first": true,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": true,
+      "emails": [
+        "chenxiong987@fzu.edu.cn",
+        "gucheng@scu.edu.cn"
+      ],
+      "source": "meta-guided"
     },
     {
       "name": "Gu, Cheng",
-      "affiliation": "",
-      "affiliations": [],
+      "affiliation": "College of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China",
+      "affiliations": [
+        "College of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China"
+      ],
       "position": 14,
-      "is_corresponding": false,
-      "is_co_first": false,
-      "source": "meta:citation_author"
+      "is_corresponding": true,
+      "is_co_first": true,
+      "markers": "",
+      "affiliation_numbers": [],
+      "has_mail_icon": true,
+      "emails": [
+        "chenxiong987@fzu.edu.cn",
+        "gucheng@scu.edu.cn"
+      ],
+      "source": "meta-guided"
     }
   ],
-  "raw_tooltips": [],
+  "raw_tooltips": [
+    {
+      "name": "Wang, Shengdong",
+      "tooltip": "Author information\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.\\n---\\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Xie, Zhipeng",
+      "tooltip": "Author information\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.\\n---\\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Zhu, Da",
+      "tooltip": "Author information\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.\\n---\\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Fu, Shuai",
+      "tooltip": "Author information\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.\\n---\\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Wu, Yishi",
+      "tooltip": "Author information\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.\\n---\\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Yu, Hongling",
+      "tooltip": "Author information\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.\\n---\\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Lu, Chuangye",
+      "tooltip": "Author information\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.\\n---\\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Zhou, Panke",
+      "tooltip": "Author information\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.\\n---\\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Bonn, Mischa",
+      "tooltip": "Author information\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.\\n---\\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Wang, Hai I.",
+      "tooltip": "Author information\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.\\n---\\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Liao, Qing",
+      "tooltip": "Author information\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.\\n---\\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Xu, Hong",
+      "tooltip": "Author information\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.\\n---\\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.",
+      "markers": "",
+      "has_mail_icon": false,
+      "emails": []
+    },
+    {
+      "name": "Chen, Xiong",
+      "tooltip": "Author information\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.\\n---\\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.",
+      "markers": "",
+      "has_mail_icon": true,
+      "emails": [
+        "chenxiong987@fzu.edu.cn",
+        "gucheng@scu.edu.cn"
+      ]
+    },
+    {
+      "name": "Gu, Cheng",
+      "tooltip": "Author information\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.\\n---\\nAuthors and Affiliations\n\nCollege of Polymer Science and Engineering, State Key Laboratory of Polymer Materials Engineering, Sichuan University, 610065, Chengdu, People’s Republic of China\n\nShengdong Wang & Cheng Gu\n\nState Key Laboratory of Luminescent Materials and Devices, Institute of Polymer Optoelectronic Materials and Devices, South China University of Technology, 510640, Guangzhou, People’s Republic of China\n\nShengdong Wang & Chuangye Lu\n\nState Key Laboratory of Photocatalysis on Energy and Environment, College of Chemistry, Fuzhou University, 350116, Fuzhou, People’s Republic of China\n\nZhipeng Xie, Hongling Yu, Panke Zhou & Xiong Chen\n\nInstitute of Nuclear and New Energy Technology, Tsinghua University, 100084, Beijing, People’s Republic of China\n\nDa Zhu & Hong Xu\n\nMax Planck Institute for Polymer Research, Ackermannweg 10, 55122, Mainz, Germany\n\nShuai Fu, Mischa Bonn & Hai I. Wang\n\nBeijing Key Laboratory for Optical Materials and Photonic Devices, Department of Chemistry, Capital Normal University, 100048, Beijing, People’s Republic of China\n\nYishi Wu & Qing Liao\n\nNanophotonics, Debye Institute for Nanomaterials Science, Utrecht University, Princetonplein 1, 3584 CC, Utrecht, The Netherlands\n\nHai I. Wang\n\nContributions\n\nS.W. performed experiments associated with monomer and polymer syntheses and characterizations. Z.X., H.Y., P.Z., and X.C. conducted photocatalytic production of H2O2 and analyzed the data. D.Z. and H.X. carried out calculation studies. S.F., M.B., and H.I.W. performed THz measurements. Y.W. and Q.L. conducted transient absorption spectroscopy measurements and analyzed the data. C.L. performed electrochemical measurements. C.G. conceived the project and directed the research. All authors contributed to the writing and editing of the manuscript. S.W., Z.X., and D.Z. contributed equally to this work.\n\nCorresponding authors\n\nCorrespondence to Xiong Chen or Cheng Gu.",
+      "markers": "",
+      "has_mail_icon": true,
+      "emails": [
+        "chenxiong987@fzu.edu.cn",
+        "gucheng@scu.edu.cn"
+      ]
+    }
+  ],
   "meta": {
     "citation_author": [
       "Wang, Shengdong",

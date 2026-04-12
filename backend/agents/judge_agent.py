@@ -11,11 +11,12 @@
 """
 
 import json
+import math
 import logging
 import os
 import re
 from difflib import SequenceMatcher
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 from database.connection import get_db
@@ -316,8 +317,7 @@ class JudgeAgent:
                 if _has_structured_aff(author):
                     score += 0.1
                     sources.append("structured_aff")
-                has_mark = bool(author.get("has_mail_icon")) or bool(author.get("emails"))
-                has_mark = has_mark or ("*" in str(author.get("markers") or ""))
+                has_mark = bool(author.get("has_mail_icon")) or ("*" in str(author.get("markers") or ""))
                 if has_mark:
                     score += 0.1
                     sources.append("correspondence_marker")
@@ -410,15 +410,46 @@ class JudgeAgent:
 
                 matched_faculty = None
                 confidence = 0.0
+                match_trace: Dict[str, Any] = {}
+                name_only_candidate: Optional[Dict[str, Any]] = None
 
-                # ✅ 先单位再姓名：
-                # - 有教师库：只有“单位命中”或“单位缺失（unknown）”才进入姓名匹配（避免无谓匹配、也符合你的验证逻辑）
+                # ✅ 姓名+单位同时一致才可确认目标职工：
+                # - 有教师库：只要作者具备非 Unknown 的单位信息，就进入姓名+单位的模糊匹配；
+                #   （避免因为关键词 gate 漏判而错过真实命中）
                 # - 无教师库：不做姓名匹配（直接落库供测试）
-                if faculty_loaded and (hits_school_aff or aff_unknown):
+                if faculty_loaded and (not aff_unknown):
                     match_result = self._match_author_to_faculty(author, all_faculty, db)
                     if match_result:
-                        matched_faculty, confidence = match_result
+                        # Backward/forward compatible unpacking
+                        if len(match_result) == 3:
+                            matched_faculty, confidence, match_trace = match_result
+                        else:
+                            matched_faculty, confidence = match_result  # type: ignore[misc]
+                            match_trace = {}
                         matched_count += 1
+
+                # ✅ Name-only candidate (NEEDS_REVIEW):
+                # If name is a strong match but affiliation is Unknown/mismatched,
+                # keep it as a review candidate instead of skipping.
+                if faculty_loaded and (matched_faculty is None):
+                    best = self._best_name_candidate(author, all_faculty)
+                    if best is not None:
+                        fac = best["faculty"]
+                        name_score = float(best.get("name_score") or 0.0)
+                        aff_score = float(best.get("aff_score") or 0.0)
+                        aff_used = str(best.get("aff_used") or "")
+
+                        if name_score >= self.name_threshold and (aff_unknown or aff_score < self.affiliation_threshold):
+                            name_only_candidate = {
+                                "faculty_id": fac.id,
+                                "employee_id": getattr(fac, "employee_id", None),
+                                "name_zh": getattr(fac, "name_zh", None),
+                                "department": getattr(fac, "department", None),
+                                "name_score": name_score,
+                                "aff_score": aff_score,
+                                "aff_used": aff_used,
+                                "reason": ("affiliation_unknown" if aff_unknown else "affiliation_mismatch"),
+                            }
 
                 # 打印
                 if matched_faculty:
@@ -437,7 +468,7 @@ class JudgeAgent:
                 # - 有教师库：只落“匹配到本校教师 / 或单位命中本校关键词”的作者
                 # - 无教师库：全部落库（测试模式）
                 if faculty_loaded:
-                    if (matched_faculty is None) and (not hits_school_aff):
+                    if (matched_faculty is None) and (not hits_school_aff) and (name_only_candidate is None):
                         logger.info("[Judge] Skipped non-school author: %s", author.get("name"))
                         continue
 
@@ -454,7 +485,9 @@ class JudgeAgent:
                     match_signals={
                         "relevance": (
                             "matched_faculty" if matched_faculty else (
-                                "school_affiliation_hit" if hits_school_aff else "no_faculty_loaded"
+                                "name_only_candidate" if name_only_candidate else (
+                                    "school_affiliation_hit" if hits_school_aff else "no_faculty_loaded"
+                                )
                             )
                         ),
                         "source": author.get("source"),
@@ -462,6 +495,8 @@ class JudgeAgent:
                         "evidence_sources": evidence_sources,
                         "memory_hint_count": memory_hint_count,
                         "memory_top_score": memory_top_score,
+                        "match_trace": match_trace,
+                        "name_only_candidate": name_only_candidate,
                     },
                 )
                 db.add(paper_author)
@@ -736,7 +771,7 @@ class JudgeAgent:
                                 author['affiliations'] = vision_affs
 
                         # 合并“证据字段”（若存在）供调试/后续决策
-                        for k in ['emails', 'has_mail_icon', 'markers', 'source']:
+                        for k in ['has_mail_icon', 'markers', 'source']:
                             if k in vision_author and k not in author:
                                 author[k] = vision_author.get(k)
 
@@ -747,7 +782,7 @@ class JudgeAgent:
 
                         # 若通讯标记仅来自 OpenAlex，且 Vision 对齐作者并未给出通讯线索，则降级该弱证据
                         if author.get('corresponding_source') == 'openalex' and matched_vision:
-                            has_strong_hover = bool(author.get('has_mail_icon')) or bool(author.get('emails')) or ('*' in str(author.get('markers') or ''))
+                            has_strong_hover = bool(author.get('has_mail_icon')) or ('*' in str(author.get('markers') or ''))
                             if not has_strong_hover and not bool(vision_author.get('is_corresponding')):
                                 author['is_corresponding'] = False
                         merged_count += 1
@@ -775,43 +810,185 @@ class JudgeAgent:
     
     def _match_author_to_faculty(
         self, author: dict, faculty_list: List[Faculty], db: Session
-    ) -> Optional[Tuple[Faculty, float]]:
+    ) -> Optional[Tuple[Faculty, float, Dict[str, Any]]]:
         """
         匹配单个作者到教师
         
         返回：(matched_faculty, confidence_score) 或 None
         """
-        author_name = author.get('name', '').strip()
-        author_aff = author.get('affiliation', '').strip()
+        author_name = str(author.get('name', '') or '').strip()
+
+        # Use both the flattened `affiliation` and the structured `affiliations` list.
+        # We require affiliation evidence for a positive faculty match.
+        aff_candidates: List[str] = []
+        main_aff = author.get('affiliation')
+        if isinstance(main_aff, str) and main_aff.strip():
+            aff_candidates.append(main_aff.strip())
+        affs = author.get('affiliations')
+        if isinstance(affs, list):
+            for a in affs:
+                if isinstance(a, str) and a.strip():
+                    aff_candidates.append(a.strip())
+
+        # De-dup + drop Unknown.
+        uniq_aff: List[str] = []
+        seen_aff = set()
+        for a in aff_candidates:
+            key = str(a).strip().lower()
+            if not key or key == 'unknown':
+                continue
+            if key in seen_aff:
+                continue
+            seen_aff.add(key)
+            uniq_aff.append(str(a).strip())
+        aff_candidates = uniq_aff
         
         if not author_name:
             return None
         
-        best_match = None
+        best_match: Optional[Faculty] = None
         best_score = 0.0
+        best_trace: Dict[str, Any] = {}
         
         for faculty in faculty_list:
-            # 计算名字相似度
+            # 1) Name evidence (fuzzy)
             name_score = self._name_similarity(author_name, faculty)
-            
             if name_score < self.name_threshold:
                 continue
-            
-            # 计算单位相似度
-            aff_score = self._affiliation_similarity(author_aff, faculty)
-            
-            # 综合得分（名字权重 0.7，单位权重 0.3）
-            total_score = name_score * 0.7 + aff_score * 0.3
+
+            # 2) Affiliation evidence (fuzzy) — REQUIRED for a positive match.
+            aff_score, aff_used = self._affiliation_similarity_any(aff_candidates, faculty)
+            if aff_score < self.affiliation_threshold:
+                continue
+
+            # 3) Evidence fusion (MAP-style ranking). Keep it explainable.
+            # We treat "same person" as a binary latent target T and compute a pseudo-posterior.
+            # This is not a full Bayesian network, but it is a transparent approximation.
+            posterior, fusion_trace = self._fuse_match_posterior(
+                name_score=name_score,
+                aff_score=aff_score,
+            )
+            total_score = posterior
             
             if total_score > best_score:
-                best_score = total_score
+                best_score = float(total_score)
                 best_match = faculty
+                best_trace = {
+                    "name_score": float(name_score),
+                    "aff_score": float(aff_score),
+                    "aff_used": aff_used,
+                    "posterior": float(posterior),
+                    **(fusion_trace or {}),
+                }
         
-        # 只在达到置信度阈值时返回匹配
-        if best_score >= self.match_threshold:
-            return (best_match, best_score)
+        # Hard requirement: both name+affiliation must be strong; then apply final posterior threshold.
+        if best_match is not None and best_score >= self.match_threshold:
+            return (best_match, best_score, best_trace)
         
         return None
+
+    def _best_name_candidate(self, author: dict, faculty_list: List[Faculty]) -> Optional[Dict[str, Any]]:
+        """Return the best faculty candidate by name similarity only.
+
+        Used for NEEDS_REVIEW when name matches but affiliation is Unknown/mismatched.
+        Returns a dict with keys: faculty, name_score, aff_score, aff_used.
+        """
+        if not isinstance(author, dict):
+            return None
+
+        author_name = str(author.get('name', '') or '').strip()
+        if not author_name:
+            return None
+
+        best_faculty: Optional[Faculty] = None
+        best_name_score = 0.0
+
+        for faculty in faculty_list:
+            s = float(self._name_similarity(author_name, faculty))
+            if s > best_name_score:
+                best_name_score = s
+                best_faculty = faculty
+
+        if best_faculty is None or best_name_score < self.name_threshold:
+            return None
+
+        # Affiliation similarity (for explaining mismatch/unknown in review).
+        aff_candidates: List[str] = []
+        main_aff = author.get('affiliation')
+        if isinstance(main_aff, str) and main_aff.strip():
+            aff_candidates.append(main_aff.strip())
+        affs = author.get('affiliations')
+        if isinstance(affs, list):
+            for a in affs:
+                if isinstance(a, str) and a.strip():
+                    aff_candidates.append(a.strip())
+
+        uniq_aff: List[str] = []
+        seen_aff = set()
+        for a in aff_candidates:
+            key = str(a).strip().lower()
+            if not key or key == 'unknown':
+                continue
+            if key in seen_aff:
+                continue
+            seen_aff.add(key)
+            uniq_aff.append(str(a).strip())
+        aff_candidates = uniq_aff
+
+        aff_score, aff_used = self._affiliation_similarity_any(aff_candidates, best_faculty)
+
+        return {
+            "faculty": best_faculty,
+            "name_score": float(best_name_score),
+            "aff_score": float(aff_score),
+            "aff_used": str(aff_used or ""),
+        }
+
+    def _sigmoid(self, x: float) -> float:
+        try:
+            return 1.0 / (1.0 + math.exp(-float(x)))
+        except Exception:
+            return 0.0
+
+    def _fuse_match_posterior(self, *, name_score: float, aff_score: float) -> Tuple[float, Dict[str, Any]]:
+        """Fuse multi-source evidence into a single confidence.
+
+        Interprets the decision as an (approximate) MAP estimate for T (is_same_faculty).
+        We require both evidences upstream; this function is for ranking/thresholding.
+        """
+        ns = max(0.0, min(1.0, float(name_score)))
+        af = max(0.0, min(1.0, float(aff_score)))
+
+        # Convert to a logit-like score. Affiliation is given slightly higher weight
+        # because "same name" can be common, while department/affiliation is more identifying.
+        logit = (
+            -1.2
+            + 2.2 * (ns - 0.5) * 2.0
+            + 2.8 * (af - 0.5) * 2.0
+        )
+        post = self._sigmoid(logit)
+        trace = {
+            "fusion": "sigmoid_logit",
+            "fusion_logit": float(logit),
+        }
+        return float(post), trace
+
+    def _affiliation_similarity_any(self, aff_candidates: List[str], faculty: Faculty) -> Tuple[float, str]:
+        """Return the best affiliation similarity across candidate strings.
+
+        Returns (best_score, best_aff_candidate_used).
+        """
+        if not isinstance(aff_candidates, list) or not aff_candidates:
+            return 0.0, ""
+
+        best = 0.0
+        best_used = ""
+        for a in aff_candidates[:12]:
+            s = self._affiliation_similarity(a, faculty)
+            if s > best:
+                best = float(s)
+                best_used = str(a)
+        return float(best), best_used
     
     def _name_similarity(self, paper_name: str, faculty: Faculty) -> float:
         """
@@ -883,8 +1060,8 @@ class JudgeAgent:
         3. 同义词匹配
         """
         if not paper_aff or not paper_aff.strip():
-            # 如果论文没有单位信息，给予中等置信度
-            return 0.5
+            # No affiliation evidence: do NOT allow a positive faculty confirmation.
+            return 0.0
         
         paper_aff_lower = paper_aff.lower()
         
@@ -901,7 +1078,8 @@ class JudgeAgent:
                 logger.debug("[Judge] Failed to parse departments for %s: %s", faculty.employee_id, exc)
         
         if not depts:
-            return 0.5
+            # Faculty without departments is not matchable by affiliation.
+            return 0.0
         
         best_score = 0.0
         
@@ -915,14 +1093,32 @@ class JudgeAgent:
                 best_score = max(best_score, 0.9)
                 continue
             
-            # 关键词匹配
-            paper_kws = set(w for w in paper_aff_lower.replace(',', ' ').split() if len(w) > 2)
-            dept_kws = set(w for w in dept.replace(',', ' ').split() if len(w) > 2)
+            # 关键词匹配（更鲁棒：去掉常见噪声词）
+            stop = {
+                'of', 'the', 'and', 'for', 'in', 'on', 'at', 'to', 'a', 'an',
+                'department', 'dept', 'school', 'college', 'university', 'institute',
+                'centre', 'center', 'laboratory', 'lab', 'faculty',
+            }
+            paper_kws = set(
+                w for w in re.split(r"[^a-z0-9]+", paper_aff_lower)
+                if w and len(w) > 2 and w not in stop
+            )
+            dept_kws = set(
+                w for w in re.split(r"[^a-z0-9]+", dept)
+                if w and len(w) > 2 and w not in stop
+            )
             
             if paper_kws and dept_kws:
                 overlap = len(paper_kws & dept_kws)
                 keyword_score = overlap / max(len(paper_kws), len(dept_kws))
                 best_score = max(best_score, keyword_score * 0.8)
+
+            # Fuzzy string similarity (handles punctuation/order differences)
+            try:
+                seq = SequenceMatcher(None, paper_aff_lower, dept).ratio()
+                best_score = max(best_score, seq * 0.85)
+            except Exception:
+                pass
         
         return best_score
     

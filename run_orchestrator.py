@@ -135,6 +135,21 @@ def main() -> int:
         if not isinstance(s, str) or not s:
             return s
 
+        def _normalize_punctuation_ascii(t: str) -> str:
+            if not t:
+                return t
+            table = {
+                ord("\u2019"): "'",
+                ord("\u2018"): "'",
+                ord("\u201c"): '"',
+                ord("\u201d"): '"',
+                ord("\u2013"): "-",
+                ord("\u2014"): "-",
+                ord("\xa0"): " ",
+            }
+            out = t.translate(table)
+            return " ".join(out.split())
+
         # Common Windows mojibake: UTF-8 bytes decoded as cp936/cp1252.
         candidates = [s]
         for enc in ("cp936", "cp1252", "latin1"):
@@ -154,7 +169,7 @@ def main() -> int:
             return latin * 2 - cjk * 3 - bad * 20 - len(t) // 500
 
         best = max(candidates, key=score)
-        return best
+        return _normalize_punctuation_ascii(best)
 
     def _repair_obj(obj):
         if isinstance(obj, str):

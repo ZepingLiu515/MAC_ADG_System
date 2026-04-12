@@ -1,4 +1,6 @@
 import os
+import json
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 import streamlit as st
@@ -29,6 +31,35 @@ if "memory_hints" not in st.session_state:
     st.session_state.memory_hints = []
 if "last_results" not in st.session_state:
     st.session_state.last_results = []
+
+
+def _cache_path() -> str:
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    cache_dir = os.path.join(base_dir, "data", "gui_cache")
+    os.makedirs(cache_dir, exist_ok=True)
+    return os.path.join(cache_dir, "last_smart_extraction.json")
+
+
+def _load_cache() -> Dict[str, Any]:
+    path = _cache_path()
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def _save_cache(payload: Dict[str, Any]) -> None:
+    path = _cache_path()
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+    except Exception:
+        # Cache failures should not break the UI.
+        return
 
 
 def _add_log(agent: str, message: str, confidence: float) -> None:
@@ -74,7 +105,7 @@ def _compute_memory_hints(record: dict) -> list:
         db.close()
 
 
-def _fetch_existing_dois(dois: list[str]) -> dict:
+def _fetch_existing_dois(dois: List[str]) -> Dict[str, Dict[str, Any]]:
     if not dois:
         return {}
     db = next(get_db())
@@ -112,7 +143,7 @@ def _visual_root() -> str:
     return os.path.join(base_dir, "data", "visual_slices")
 
 
-def _doi_to_screenshot(doi: str) -> str | None:
+def _doi_to_screenshot(doi: str) -> Optional[str]:
     if not doi:
         return None
     root = _visual_root()
@@ -121,7 +152,7 @@ def _doi_to_screenshot(doi: str) -> str | None:
     return path if os.path.exists(path) else None
 
 
-def _load_record_from_db(doi: str) -> dict | None:
+def _load_record_from_db(doi: str) -> Optional[Dict[str, Any]]:
     if not doi:
         return None
     db = next(get_db())
@@ -156,6 +187,22 @@ def _load_record_from_db(doi: str) -> dict | None:
         return record
     finally:
         db.close()
+
+
+# ---- Restore cached UI state (survives browser refresh) ----
+if (not st.session_state.get("last_results")) and (not st.session_state.get("last_record")):
+    cached = _load_cache()
+    cached_results = cached.get("last_results")
+    if isinstance(cached_results, list) and cached_results:
+        st.session_state.last_results = cached_results
+    cached_doi = cached.get("last_record_doi")
+    if isinstance(cached_doi, str) and cached_doi.strip():
+        db_record = _load_record_from_db(cached_doi.strip())
+        if db_record:
+            st.session_state.last_record = db_record
+    cached_logs = cached.get("agent_logs")
+    if isinstance(cached_logs, list) and cached_logs:
+        st.session_state.agent_logs = cached_logs
 
 begin_card("步骤 1 · 任务注入", "上传 DOI 列表并启动自动处理。")
 uploaded_file = st.file_uploader("上传 DOI 列表（Excel/CSV）", type=["xlsx", "csv"])
@@ -326,6 +373,38 @@ if uploaded_file:
                     st.session_state.memory_hints = _compute_memory_hints(st.session_state.last_record)
                 else:
                     st.session_state.memory_hints = []
+
+                # Persist minimal state for refresh recovery.
+                try:
+                    minimal_results = []
+                    for r in results:
+                        if not isinstance(r, dict):
+                            continue
+                        vision_text = ""
+                        if isinstance(r.get("vision_data"), dict):
+                            vision_text = str(r.get("vision_data", {}).get("text") or "")
+                        minimal_results.append(
+                            {
+                                "doi": r.get("doi"),
+                                "title": r.get("title"),
+                                "journal": r.get("journal"),
+                                "status": r.get("status"),
+                                "状态": r.get("状态"),
+                                "视觉解析": r.get("视觉解析") or ("有结果" if len(vision_text) > 5 else "无"),
+                            }
+                        )
+                    last_doi = None
+                    if isinstance(st.session_state.last_record, dict):
+                        last_doi = st.session_state.last_record.get("doi")
+                    _save_cache(
+                        {
+                            "last_results": minimal_results,
+                            "last_record_doi": last_doi,
+                            "agent_logs": st.session_state.get("agent_logs", [])[-200:],
+                        }
+                    )
+                except Exception:
+                    pass
             end_card()
 
             if st.session_state.last_results:
@@ -371,16 +450,33 @@ if uploaded_file:
                                 if shot:
                                     selected_record["screenshot_path"] = shot
                             st.session_state.last_record = selected_record
+                            try:
+                                cached = _load_cache()
+                                if not isinstance(cached, dict):
+                                    cached = {}
+                                cached["last_record_doi"] = selected_doi
+                                _save_cache(cached)
+                            except Exception:
+                                pass
                         else:
                             db_record = _load_record_from_db(selected_doi)
                             if db_record:
                                 st.session_state.last_record = db_record
+                                try:
+                                    cached = _load_cache()
+                                    if not isinstance(cached, dict):
+                                        cached = {}
+                                    cached["last_record_doi"] = selected_doi
+                                    _save_cache(cached)
+                                except Exception:
+                                    pass
                 end_card()
                 
     except Exception as e:
         st.error(f"错误：{e}")
 else:
-    st.warning("等待上传文件...")
+    if not st.session_state.last_results and not st.session_state.last_record:
+        st.warning("等待上传文件...")
 
 st.divider()
 # 视觉-语义对齐区：左图右表

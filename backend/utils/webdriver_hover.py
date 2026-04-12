@@ -61,6 +61,24 @@ def extract_author_hover_data(
 
     email_re = re.compile(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", re.IGNORECASE)
 
+    def _normalize_punctuation_ascii(s: str) -> str:
+        if not isinstance(s, str) or not s:
+            return s
+        # Avoid Windows console mojibake for curly punctuation (e.g. People鈥檚)
+        # by normalizing to ASCII-friendly forms.
+        table = {
+            ord("\u2019"): "'",  # right single quote
+            ord("\u2018"): "'",  # left single quote
+            ord("\u201c"): '"',  # left double quote
+            ord("\u201d"): '"',  # right double quote
+            ord("\u2013"): "-",  # en dash
+            ord("\u2014"): "-",  # em dash
+            ord("\xa0"): " ",
+        }
+        out = s.translate(table)
+        out = re.sub(r"\s+", " ", out).strip()
+        return out
+
     def _norm_for_match(s: str) -> str:
         s = str(s or "")
         s = unicodedata.normalize("NFKD", s)
@@ -75,7 +93,13 @@ def extract_author_hover_data(
         return bool(low) and any(p in low for p in ignore_name_phrases)
 
     def _name_key(name: str) -> str:
-        return "".join(ch for ch in str(name or "").lower() if ch.isalnum())
+        # Order-insensitive name key.
+        # Nature often renders names as "First Last" while meta tags are "Last, First".
+        tokens = re.findall(r"[a-z0-9]+", str(name or "").lower())
+        tokens = [t for t in tokens if t]
+        if not tokens:
+            return ""
+        return "|".join(sorted(tokens))
 
     def _xpath_literal(text: str) -> str:
         s = str(text)
@@ -168,7 +192,7 @@ def extract_author_hover_data(
     }
   };
 
-  const selectors = [
+    const selectors = [
     '[role="dialog"]',
     '[aria-modal="true"]',
     'aside',
@@ -176,6 +200,11 @@ def extract_author_hover_data(
     '[class*="modal" i]',
     '[class*="panel" i]',
     '[class*="sidebar" i]',
+        // Nature/Springer: in-page "Author information" section
+        '[id*="author-information" i]',
+        '[data-test*="author-information" i]',
+        'section[id*="author" i]',
+        'section[class*="author" i]',
     '[class*="author" i][class*="info" i]',
     '[class*="author" i][class*="detail" i]',
     '[data-test*="author" i]',
@@ -198,13 +227,14 @@ def extract_author_hover_data(
 
     const tN = norm(txt);
     let score = 0;
-    if (hintN && tN.includes(hintN)) score += 6;
+        if (hintN && tN.includes(hintN)) score += 6;
     for (const k of keys) {
       if (tN.includes(k)) score += 2;
     }
     if (/@/.test(txt)) score += 6;
     if (/corresponding/i.test(txt)) score += 3;
     if (/affiliat/i.test(txt)) score += 3;
+        if (/author information/i.test(txt)) score += 3;
     if (txt.length >= 50 && txt.length <= 2500) score += 2;
     scored.push({ score, txt });
   }
@@ -266,11 +296,253 @@ def extract_author_hover_data(
         except Exception:
             pass
 
-    def _infer_flags_from_text(text: str) -> Dict[str, bool]:
+    def _parse_name_parts(name: str) -> Dict[str, str]:
+        raw = str(name or "")
+        raw = raw.replace("\u00a0", " ")
+        raw = re.sub(r"\s+", " ", raw).strip()
+
+        if "," in raw:
+            last, rest = raw.split(",", 1)
+            last = last.strip()
+            first = rest.strip()
+        else:
+            parts = raw.split()
+            first = parts[0] if parts else ""
+            last = parts[-1] if parts else ""
+
+        def _clean_token(s: str) -> str:
+            s = unicodedata.normalize("NFKD", str(s or ""))
+            s = "".join(ch for ch in s if not unicodedata.combining(ch))
+            s = re.sub(r"[^A-Za-z\-\'\s]", " ", s)
+            s = re.sub(r"\s+", " ", s).strip().lower()
+            return s
+
+        first_c = _clean_token(first)
+        last_c = _clean_token(last)
+        first_tok = first_c.split()[0] if first_c else ""
+        last_tok = last_c.split()[-1] if last_c else ""
+        return {
+            "first": first_tok,
+            "last": last_tok,
+            "first_initial": first_tok[:1] if first_tok else "",
+            "last_initial": last_tok[:1] if last_tok else "",
+        }
+
+    def _names_match(a: str, b: str) -> bool:
+        pa = _parse_name_parts(a)
+        pb = _parse_name_parts(b)
+        if not pa.get("last") or not pb.get("last"):
+            return False
+        if pa["last"] != pb["last"]:
+            return False
+        if pa.get("first") and pb.get("first"):
+            if pa["first"] == pb["first"]:
+                return True
+            if pa.get("first_initial") and pb.get("first_initial") and pa["first_initial"] == pb["first_initial"]:
+                return True
+            return False
+        if pa.get("first_initial") and pb.get("first_initial") and pa["first_initial"] == pb["first_initial"]:
+            return True
+        return False
+
+    def _looks_like_single_person_name(line: str) -> bool:
+        s = str(line or "").replace("\u00a0", " ")
+        s = re.sub(r"\s+", " ", s).strip()
+        if not s or len(s) < 4 or len(s) > 80:
+            return False
+        # Reject things that look like affiliations.
+        low = s.lower()
+        if any(k in low for k in [
+            "university",
+            "college",
+            "institute",
+            "department",
+            "school",
+            "hospital",
+            "laboratory",
+            "centre",
+            "center",
+        ]):
+            return False
+        if any(ch.isdigit() for ch in s):
+            return False
+        # Accept typical Nature name formats like "Hai I. Wang".
+        return bool(re.match(r"^[A-Z][A-Za-z.'\-]+(?:\s+[A-Z][A-Za-z.'\-]+){1,5}$", s))
+
+    def _split_author_list_line(line: str) -> List[str]:
+        s = str(line or "").replace("\u00a0", " ")
+        s = re.sub(r"\s+", " ", s).strip()
+        if not s:
+            return []
+        if _looks_like_single_person_name(s):
+            return [s]
+        s = s.replace("&", ",")
+        s = re.sub(r"\band\b", ",", s, flags=re.IGNORECASE)
+        parts = [p.strip(" ,;\t") for p in s.split(",")]
+        out: List[str] = []
+        for p in parts:
+            p2 = re.sub(r"[0-9\*\u2020\u2021\u00b9\u00b2\u00b3]+", "", p).strip()
+            p2 = re.sub(r"\s+", " ", p2).strip()
+            if len(p2) < 3:
+                continue
+            if " " not in p2:
+                continue
+            out.append(p2)
+        return out
+
+    def _looks_like_affiliation_line(line: str) -> bool:
+        s = str(line or "").strip()
+        if len(s) < 25 or len(s) > 340:
+            return False
+        if email_re.search(s):
+            return False
+        low = s.lower()
+        if any(k in low for k in [
+            "authors and affiliations",
+            "author information",
+            "corresponding authors",
+            "correspondence to",
+            "contributions",
+        ]):
+            return False
+        keys = [
+            "university",
+            "college",
+            "institute",
+            "department",
+            "school",
+            "hospital",
+            "laboratory",
+            "centre",
+            "center",
+            "academy",
+            "faculty",
+            "state key laboratory",
+            "key laboratory",
+        ]
+        return any(k in low for k in keys) or ("," in s and len(s) >= 40)
+
+    def _looks_like_author_list_line(line: str) -> bool:
+        s = str(line or "").strip()
+        if len(s) < 6 or len(s) > 220:
+            return False
+        if email_re.search(s):
+            return False
+        low = s.lower()
+        if any(k in low for k in [
+            "university",
+            "college",
+            "institute",
+            "department",
+            "school",
+            "hospital",
+            "laboratory",
+            "centre",
+            "center",
+        ]):
+            return False
+        return ("&" in s) or ("," in s) or (" and " in low) or _looks_like_single_person_name(s)
+
+    def _extract_author_affiliation_pairs(text: str) -> List[Dict[str, Any]]:
+        if not text:
+            return []
+        lines = [
+            re.sub(r"\s+", " ", str(ln or "").replace("\u00a0", " ")).strip()
+            for ln in str(text or "").splitlines()
+        ]
+        start = -1
+        for i, ln in enumerate(lines):
+            if "authors and affiliations" in ln.lower():
+                start = i + 1
+                break
+        if start < 0:
+            return []
+        end = len(lines)
+        for i in range(start, len(lines)):
+            low = lines[i].lower()
+            if any(k in low for k in ["contributions", "corresponding authors", "additional information"]):
+                end = i
+                break
+
+        section = [ln for ln in lines[start:end] if ln]
+        out: List[Dict[str, Any]] = []
+        i = 0
+        while i < len(section) - 1:
+            aff = section[i]
+            names = section[i + 1]
+            if _looks_like_affiliation_line(aff) and _looks_like_author_list_line(names):
+                out.append({"affiliation": aff, "authors": _split_author_list_line(names)})
+                i += 2
+                continue
+            i += 1
+        return out
+
+    def _extract_correspondence_names(text: str) -> List[str]:
+        if not text:
+            return []
+        m = re.search(r"correspondence\s+to\s+(.{1,200}?)(?:\.|\n|$)", str(text), flags=re.IGNORECASE)
+        if not m:
+            return []
+        s = re.sub(r"\s+", " ", m.group(1) or "").strip()
+        if not s:
+            return []
+        s = s.replace("&", ",")
+        s = re.sub(r"\bor\b", ",", s, flags=re.IGNORECASE)
+        s = re.sub(r"\band\b", ",", s, flags=re.IGNORECASE)
+        parts = [p.strip(" ,;\t") for p in s.split(",") if p and p.strip()]
+        return [p for p in parts if " " in p and len(p) <= 80]
+
+    def _extract_equal_contrib_initials(text: str) -> set:
+        low = str(text or "").lower()
+        idx = low.find("contributed equally")
+        if idx < 0:
+            idx = low.find("equal contribution")
+        if idx < 0:
+            return set()
+        start = max(0, idx - 280)
+        end = min(len(text), idx + 140)
+        window = str(text or "")[start:end]
+        pairs = re.findall(r"\b([A-Z])\.\s*([A-Z])\.\b", window)
+        return {f"{a.lower()}.{b.lower()}." for a, b in pairs}
+
+    def _initials_token_for_author(author_name: str) -> str:
+        p = _parse_name_parts(author_name)
+        fi = p.get("first_initial") or ""
+        li = p.get("last_initial") or ""
+        if not fi or not li:
+            return ""
+        return f"{fi}.{li}.".lower()
+
+    def _infer_flags_from_text(text: str, author_name: str = "") -> Dict[str, bool]:
         low = (text or "").lower()
-        is_corresponding = any(k in low for k in ["corresponding author", "correspondence", "email", "e-mail"])
-        is_co_first = any(k in low for k in ["equal contribution", "contributed equally", "co-first", "co first"])
-        return {"is_corresponding": is_corresponding, "is_co_first": is_co_first}
+
+        corr_names = _extract_correspondence_names(text)
+        if author_name and corr_names:
+            is_corresponding = any(_names_match(author_name, n) for n in corr_names)
+        else:
+            is_corresponding = any(k in low for k in ["corresponding author", "correspondence", "email", "e-mail"])
+
+        is_co_first = False
+        if author_name:
+            init_set = _extract_equal_contrib_initials(text)
+            if init_set:
+                tok = _initials_token_for_author(author_name)
+                is_co_first = bool(tok) and tok in init_set
+            else:
+                # Conservative fallback: only set if the author name is very close to the phrase.
+                for key in ["equal contribution", "contributed equally", "co-first", "co first"]:
+                    pos = low.find(key)
+                    if pos < 0:
+                        continue
+                    window = low[max(0, pos - 120) : pos + 160]
+                    p = _parse_name_parts(author_name)
+                    if p.get("last") and p["last"] in window:
+                        is_co_first = True
+                        break
+        else:
+            is_co_first = any(k in low for k in ["equal contribution", "contributed equally", "co-first", "co first"])
+
+        return {"is_corresponding": bool(is_corresponding), "is_co_first": bool(is_co_first)}
 
     def _infer_affiliation_from_text(text: str) -> str:
         if not text:
@@ -298,6 +570,75 @@ def extract_author_hover_data(
                 best = ln
                 best_score = score
         return best if best and len(best) <= 240 else ""
+
+    def _infer_affiliations_from_text(text: str) -> List[str]:
+        if not text:
+            return []
+        out: List[str] = []
+        seen = set()
+        for ln in text.splitlines():
+            s = re.sub(r"\s+", " ", str(ln or "")).strip()
+            if not s or len(s) < 10:
+                continue
+            low = s.lower()
+            # Skip obvious non-affiliation lines.
+            if any(k in low for k in ["corresponding", "equal contribution", "contributed equally"]):
+                continue
+            if email_re.search(s):
+                continue
+
+            score = 0
+            if any(k in low for k in [
+                "university",
+                "college",
+                "institute",
+                "department",
+                "school",
+                "hospital",
+                "laboratory",
+                "centre",
+                "center",
+            ]):
+                score += 3
+            if "," in s:
+                score += 1
+            if 15 <= len(s) <= 240:
+                score += 1
+            if score < 3:
+                continue
+            key = s.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(s)
+            if len(out) >= 6:
+                break
+        return out
+
+    def _infer_affiliations_for_author(text: str, author_name: str) -> List[str]:
+        """Attempt to map affiliations to a specific author from Nature-like panels.
+
+        Nature often shows a global "Authors and Affiliations" panel where each affiliation is
+        followed by the list of authors that belong to it. This function inverts that mapping.
+        """
+
+        pairs = _extract_author_affiliation_pairs(text)
+        if pairs and author_name:
+            out: List[str] = []
+            seen = set()
+            for item in pairs:
+                aff = str(item.get("affiliation") or "").strip()
+                names = item.get("authors") if isinstance(item.get("authors"), list) else []
+                if not aff or not names:
+                    continue
+                if any(_names_match(author_name, nm) for nm in names):
+                    key = aff.lower()
+                    if key not in seen:
+                        seen.add(key)
+                        out.append(aff)
+            if out:
+                return out
+        return _infer_affiliations_from_text(text)
     with sync_playwright() as p:
         browser = p.chromium.launch(**launch_options)
         context = browser.new_context(**context_options)
@@ -416,19 +757,54 @@ def extract_author_hover_data(
         def _best_author_element(author_name: str):
             if not author_name:
                 return None
-            literal = _xpath_literal(author_name)
+            # Generate likely display variants.
+            variants: List[str] = []
+            raw = str(author_name or "").strip()
+            if raw:
+                variants.append(raw)
+                variants.append(raw.replace(",", " "))
+                # Handle "Last, First" -> "First Last".
+                if "," in raw:
+                    parts = [p.strip() for p in raw.split(",") if p.strip()]
+                    if len(parts) >= 2:
+                        last = parts[0]
+                        first = " ".join(parts[1:])
+                        variants.append(f"{first} {last}".strip())
+                        variants.append(f"{last} {first}".strip())
+                # Remove dots for initials.
+                variants.append(raw.replace(".", ""))
+
+            # Dedup variants preserving order.
+            dedup_v: List[str] = []
+            seen_v = set()
+            for v in variants:
+                v2 = re.sub(r"\s+", " ", v).strip()
+                if not v2 or v2 in seen_v:
+                    continue
+                seen_v.add(v2)
+                dedup_v.append(v2)
+            variants = dedup_v
+
             candidates = []
             try:
-                el0 = page.query_selector(f"xpath=//*[normalize-space(text())={literal}]")
-                if el0:
-                    candidates.append(el0)
+                for v in variants[:3]:
+                    literal = _xpath_literal(v)
+                    el0 = page.query_selector(
+                        f"xpath=//*[self::a or self::button or @role='button' or @role='link' or self::span][contains(normalize-space(.), {literal})]"
+                    )
+                    if el0:
+                        candidates.append(el0)
             except Exception:
                 pass
 
             try:
-                els = page.query_selector_all(f"xpath=//*[contains(normalize-space(.), {literal})]")
-                if isinstance(els, list):
-                    candidates.extend(els[:30])
+                for v in variants[:3]:
+                    literal = _xpath_literal(v)
+                    els = page.query_selector_all(
+                        f"xpath=//*[self::a or self::button or @role='button' or @role='link' or self::span][contains(normalize-space(.), {literal})]"
+                    )
+                    if isinstance(els, list):
+                        candidates.extend(els[:40])
             except Exception:
                 pass
 
@@ -445,12 +821,16 @@ def extract_author_hover_data(
   const root = node.closest('li, div, span, p, a, section, article') || node;
   if (!root) return { score: 0 };
   if (root.closest('nav, header, footer, aside')) return { score: 0 };
+    const tag = (node.tagName || '').toLowerCase();
+    const role = (node.getAttribute && (node.getAttribute('role') || '')) || '';
+    const isClickable = (tag === 'a' || tag === 'button' || role === 'button' || role === 'link');
+    const cls = (node.className && String(node.className)) ? String(node.className) : '';
   const sups = Array.from(root.querySelectorAll('sup')).map(s => (s.textContent||'').trim()).join(' ');
   const hasSupDigit = /\b\d{1,2}\b/.test(sups);
   const hasAnySup = !!root.querySelector('sup');
   const txt = (root.textContent || '').slice(0, 2000);
   const sepScore = (txt.includes(',') ? 1 : 0) + (txt.includes(';') ? 1 : 0) + (/\band\b/i.test(txt) ? 1 : 0);
-  return { hasSupDigit, hasAnySup, sepScore, txt };
+    return { hasSupDigit, hasAnySup, sepScore, txt, isClickable, cls };
 }
 """
                     )
@@ -463,6 +843,18 @@ def extract_author_hover_data(
                 txt = str(info.get("txt") or "") if isinstance(info, dict) else ""
 
                 score = 0
+                try:
+                    if isinstance(info, dict) and bool(info.get("isClickable")):
+                        score += 6
+                except Exception:
+                    pass
+
+                try:
+                    cls = str(info.get("cls") or "").lower() if isinstance(info, dict) else ""
+                    if "author" in cls:
+                        score += 2
+                except Exception:
+                    pass
                 if has_sup_digit:
                     score += 10
                 elif has_any_sup:
@@ -567,10 +959,7 @@ def extract_author_hover_data(
     } catch (e) { unsafeOtherHit = false; }
 
     let hasMail = false;
-    const mails = [];
     try {
-        const emailRe = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig;
-
         const sels = [
             // direct mailto links
             'a[href^="mailto:"]',
@@ -593,43 +982,7 @@ def extract_author_hover_data(
         const scanOne = (container) => {
             if (!container) return;
             if (!container.querySelectorAll) return;
-
-            // If this is a huge multi-author container, skip text scanning but still allow icon scan.
-            let raw = '';
-            try { raw = (container.innerText || container.textContent || ''); } catch (e) { raw = ''; }
-            const rawLen = (raw || '').length;
-
-            // Collect mailto + data-email style attributes.
-            try {
-                const links = Array.from(container.querySelectorAll('a[href],a[data-email],a[data-mail],a[data-mailto]'));
-                for (const a of links) {
-                    const href = (a.getAttribute('href') || '').trim();
-                    if (href && /^mailto:/i.test(href)) {
-                        const v = href.replace(/^mailto:/i, '').split('?')[0].trim();
-                        if (v) mails.push(v);
-                    }
-                    const dataEmail = (a.getAttribute('data-email') || a.getAttribute('data-mail') || a.getAttribute('data-mailto') || '').trim();
-                    if (dataEmail) {
-                        const m = dataEmail.match(emailRe);
-                        if (m) m.forEach(x => mails.push(x));
-                    }
-                    const title = (a.getAttribute('title') || a.getAttribute('aria-label') || '').trim();
-                    if (title) {
-                        const m = title.match(emailRe);
-                        if (m) m.forEach(x => mails.push(x));
-                    }
-                }
-            } catch (e) {}
-
-            // Light text scan for emails if the container is small-ish.
-            if (rawLen > 0 && rawLen <= 600) {
-                try {
-                    const m = raw.match(emailRe);
-                    if (m) m.forEach(x => mails.push(x));
-                } catch (e) {}
-            }
-
-            // Icon/selector scan (always allowed).
+            // Icon/selector scan only (do NOT extract emails).
             for (const sel of sels) {
                 try {
                     if (container.querySelector(sel)) { hasMail = true; break; }
@@ -651,18 +1004,14 @@ def extract_author_hover_data(
 
         for (const c of nodes) {
             scanOne(c);
-            if (hasMail && mails.length >= 1) break;
+            if (hasMail) break;
         }
-
-        // If we extracted at least one email, treat as having mail signal.
-        if (mails.length > 0) hasMail = true;
     } catch (e) {}
 
     return {
         sup,
         txt: txt.slice(0, 800),
-        hasMail,
-        mails: mails.slice(0, 5)
+        hasMail
     };
 }
 """,
@@ -842,45 +1191,33 @@ def extract_author_hover_data(
             except Exception:
                 tip = ""
 
-            flags = _infer_flags_from_text(tip)
-            affiliation = _infer_affiliation_from_text(tip)
+            flags = _infer_flags_from_text(tip, author_name=author_name or "")
+            affiliations = _infer_affiliations_for_author(tip, author_name=author_name or "")
+            affiliation = "; ".join(affiliations) if affiliations else _infer_affiliation_from_text(tip)
+
+            affiliations = [_normalize_punctuation_ascii(x) for x in affiliations if str(x).strip()]
+            affiliation = _normalize_punctuation_ascii(affiliation)
 
             has_mail_icon = False
-            emails: List[str] = []
 
             if isinstance(sup_info, dict):
                 try:
                     has_mail_icon = bool(sup_info.get("hasMail"))
                 except Exception:
                     has_mail_icon = False
-                try:
-                    emails = sup_info.get("mails") if isinstance(sup_info.get("mails"), list) else []
-                    emails = [str(e).strip() for e in emails if e and str(e).strip()]
-                except Exception:
-                    emails = []
 
-            if has_mail_icon or emails:
-                flags["is_corresponding"] = True
-
-            if "*" in markers:
-                flags["is_corresponding"] = True
-
-            if meta_emails and len(authors) < len(meta_emails):
-                try:
-                    maybe_email = str(meta_emails[len(authors)]).strip()
-                    if maybe_email and email_re.search(maybe_email):
-                        flags["is_corresponding"] = True
-                except Exception:
-                    pass
+            # Corresponding author: mail icon OR asterisk marker.
+            # Asterisk is important for PDF/screenshot-based extraction.
+            is_corresponding = bool(has_mail_icon) or ("*" in str(markers or ""))
 
             return {
                 "tooltip": tip,
                 "affiliation": affiliation,
+                "affiliations": affiliations,
                 "affiliation_numbers": aff_nums,
-                "is_corresponding": bool(flags.get("is_corresponding")),
+                "is_corresponding": bool(is_corresponding),
                 "is_co_first": bool(flags.get("is_co_first")),
                 "has_mail_icon": has_mail_icon,
-                "emails": emails,
                 "markers": markers,
             }
 
@@ -903,14 +1240,13 @@ def extract_author_hover_data(
                 {
                     "name": n,
                     "affiliation": info.get("affiliation") or "",
-                    "affiliations": [],
+                    "affiliations": info.get("affiliations") or [],
                     "position": len(authors) + 1,
                     "is_corresponding": bool(info.get("is_corresponding")),
                     "is_co_first": bool(info.get("is_co_first")),
                     "markers": info.get("markers") or "",
                     "affiliation_numbers": info.get("affiliation_numbers") or [],
                     "has_mail_icon": bool(info.get("has_mail_icon")),
-                    "emails": info.get("emails") or [],
                     "source": "meta-guided",
                 }
             )
@@ -920,7 +1256,6 @@ def extract_author_hover_data(
                     "tooltip": info.get("tooltip") or "",
                     "markers": info.get("markers") or "",
                     "has_mail_icon": bool(info.get("has_mail_icon")),
-                    "emails": info.get("emails") or [],
                 }
             )
 
@@ -979,7 +1314,7 @@ def extract_author_hover_data(
                 if info.get("skip"):
                     continue
 
-                corr = bool(info.get("is_corresponding")) or ("*" in markers) or bool(info.get("emails"))
+                corr = bool(info.get("is_corresponding")) or ("*" in str(markers or "")) or ("*" in str(info.get("markers") or ""))
                 cofirst = bool(info.get("is_co_first")) or ("#" in markers) or ("†" in markers) or ("‡" in markers)
 
                 aff_nums = info.get("affiliation_numbers") or []
@@ -990,14 +1325,13 @@ def extract_author_hover_data(
                     {
                         "name": name,
                         "affiliation": info.get("affiliation") or "",
-                        "affiliations": [],
+                        "affiliations": info.get("affiliations") or [],
                         "position": len(authors) + 1,
                         "is_corresponding": bool(corr),
                         "is_co_first": bool(cofirst),
                         "markers": (markers + (info.get("markers") or "")).strip(),
                         "affiliation_numbers": aff_nums,
                         "has_mail_icon": bool(info.get("has_mail_icon")),
-                        "emails": info.get("emails") or [],
                         "source": "hover",
                     }
                 )
@@ -1007,7 +1341,6 @@ def extract_author_hover_data(
                         "tooltip": info.get("tooltip") or "",
                         "markers": markers,
                         "has_mail_icon": bool(info.get("has_mail_icon")),
-                        "emails": info.get("emails") or [],
                     }
                 )
                 seen_names.add(name)
@@ -1093,7 +1426,7 @@ def extract_author_hover_data(
             "meta": {
                 "citation_author": meta_names,
                 "citation_author_institution": meta_institutions,
-                "citation_author_email": meta_emails,
+                "citation_author_email": [],
             },
         }
 

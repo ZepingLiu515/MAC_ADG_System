@@ -252,7 +252,7 @@ class VisionAgent:
                     except Exception:
                         continue
                 normalized['affiliation_numbers'] = nums
-            for k in ('emails', 'has_mail_icon', 'markers', 'source', 'corresponding_source'):
+            for k in ('has_mail_icon', 'markers', 'source', 'corresponding_source'):
                 if k in author:
                     normalized[k] = author.get(k)
             

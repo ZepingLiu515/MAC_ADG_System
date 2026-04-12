@@ -32,15 +32,21 @@ recent_papers = db.query(Paper).order_by(Paper.created_at.desc()).limit(5).all()
 db.close()
 
 if ui_cfg.get("show_stats", True):
-    stat_grid(
-        [
-            ("论文总数", total_papers),
-            ("作者条目", total_authors),
-            ("已完成", completed),
-            ("待复核", needs_review),
-            ("教师库", total_faculty),
-        ]
-    )
+    cols = st.columns(5)
+    stats = [
+        ("论文总数", total_papers, "frontend/pages/2_Smart_Extraction.py"),
+        ("作者条目", total_authors, "frontend/pages/2_Smart_Extraction.py"),
+        ("已完成", completed, "frontend/pages/2_Smart_Extraction.py"),
+        ("待复核", needs_review, "frontend/pages/2_Smart_Extraction.py"),
+        ("教师库", total_faculty, "frontend/pages/1_Data_Management.py"),
+    ]
+    for col, (label, value, target) in zip(cols, stats):
+        with col:
+            if st.button(f"{label}\n{value}", width="stretch"):
+                try:
+                    st.switch_page(target)
+                except Exception:
+                    st.info("请通过左侧导航栏进入对应模块。")
 
 
 def _visual_root() -> str:
@@ -90,7 +96,7 @@ def _load_sidecar_text(image_path: str) -> str:
 def _render_visual_panel() -> None:
     if not ui_cfg.get("show_visual_panel", True):
         return
-    begin_card("证据感知区（视觉）", "展示 OCR 截图与原始文本，便于人工核验。")
+    begin_card("证据感知区（视觉）", "展示网页截图，便于人工核验。")
     latest = recent_papers[0] if recent_papers else None
     screenshot = _doi_to_screenshot(latest.doi) if latest else None
     if not screenshot:
@@ -98,11 +104,6 @@ def _render_visual_panel() -> None:
     if screenshot:
         caption = f"当前论文截图：{latest.doi}" if latest else "最新截图"
         st.image(screenshot, caption=caption, width="stretch")
-        if ui_cfg.get("show_ocr_text", True):
-            ocr_text = _load_sidecar_text(screenshot)
-            if ocr_text:
-                st.markdown("**OCR 原始文本**")
-                st.code(ocr_text[:1200])
     else:
         st.info("暂无截图记录，请先运行智能提取。")
     end_card()
