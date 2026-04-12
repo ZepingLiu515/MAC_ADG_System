@@ -10,6 +10,90 @@ import re
 from typing import Any, Dict, Optional
 
 
+def try_expand_common_sections(page: Any) -> None:
+    """Best-effort expand for common 'see more/show more' prompts.
+
+    This is intentionally lightweight and safe. It runs before screenshots/ROI capture so
+    OCR doesn't ingest UI metric text that is hidden behind expandable blocks.
+    """
+
+    js = r"""
+(() => {
+    const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const isVisible = (el) => {
+        try {
+            if (!el) return false;
+            const style = window.getComputedStyle(el);
+            const rect = el.getBoundingClientRect();
+            return style && style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 2 && rect.height > 2;
+        } catch (e) { return false; }
+    };
+    const banned = (el) => {
+        try { return !!(el && el.closest && el.closest('nav,footer,header,aside')); } catch (e) { return false; }
+    };
+    const getText = (el) => {
+        try { return (el.innerText || el.textContent || '').trim(); } catch (e) { return ''; }
+    };
+    const hasVisibleTextMarker = (needle) => {
+        const candidates = [];
+        const sels = ['button','a','summary','[role="button"]','[aria-expanded]'];
+        for (const sel of sels) {
+            try { document.querySelectorAll(sel).forEach(el => candidates.push(el)); } catch (e) {}
+        }
+        for (const el of candidates) {
+            if (!isVisible(el) || banned(el)) continue;
+            const t = norm(getText(el));
+            if (!t) continue;
+            if (t.includes(needle)) return true;
+        }
+        return false;
+    };
+
+    const moreMarkers = ['see more','show more','view more','read more','show all','see all'];
+    const candidates = [];
+    const sels = ['button','a','summary','[role="button"]','[aria-expanded]'];
+    for (const sel of sels) {
+        try { document.querySelectorAll(sel).forEach(el => candidates.push(el)); } catch (e) {}
+    }
+    let clicks = 0;
+
+    // 1) Try to open author/affiliation panels (avoid collapsing if already open).
+    const alreadyOpen = hasVisibleTextMarker('hide author information');
+    if (!alreadyOpen) {
+        for (const el of candidates) {
+            if (clicks >= 2) break;
+            if (!isVisible(el) || banned(el)) continue;
+            const t = norm(getText(el));
+            if (!t) continue;
+            const isAuthorInfo = (t.includes('author information') && (t.includes('affiliation') || t.includes('affiliations')));
+            const isAuthorsAff = (t.includes('authors') && (t.includes('affiliation') || t.includes('affiliations')));
+            if (!(isAuthorInfo || isAuthorsAff)) continue;
+            try { el.click(); clicks++; } catch (e) {}
+        }
+    }
+
+    // 2) Expand "see more/show more" style controls.
+    for (const el of candidates) {
+        if (clicks >= 3) break;
+        if (!isVisible(el) || banned(el)) continue;
+        const t = norm(getText(el));
+        if (!t) continue;
+        if (!moreMarkers.some(m => t === m || t.includes(m))) continue;
+        try {
+            el.click();
+            clicks++;
+        } catch (e) {}
+    }
+    return clicks;
+})();
+"""
+
+    try:
+        page.evaluate(js)
+    except Exception:
+        pass
+
+
 async def get_webpage_screenshot_async(
     *,
     async_playwright: Any,
@@ -285,11 +369,17 @@ def get_webpage_screenshot_sync(
         scroll_to_top(page)
         wait_for_academic_elements(page, timeout_ms=8000)
 
+        # Expand common collapsed blocks before capturing the screenshot.
+        try_expand_common_sections(page)
+
         if section:
             try:
                 try_activate_section(page, section)
             except Exception:
                 pass
+
+        # Some sites only reveal the 'see more' controls after switching tabs.
+        try_expand_common_sections(page)
 
         scroll_to_top(page)
         page.screenshot(path=save_path, full_page=bool(full_page))

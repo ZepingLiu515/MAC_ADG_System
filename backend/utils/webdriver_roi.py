@@ -11,6 +11,8 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, Optional
 
+from .webdriver_screenshot import try_expand_common_sections
+
 
 def get_author_block_screenshot_sync(
     *,
@@ -87,6 +89,9 @@ def get_author_block_screenshot_sync(
             scroll_to_top(page)
         except Exception:
             pass
+
+        # Expand common collapsed blocks before analyzing the page for author/affiliation ROI.
+        try_expand_common_sections(page)
 
         # Pull meta authors as anchors.
         try:

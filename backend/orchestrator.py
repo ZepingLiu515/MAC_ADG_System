@@ -345,6 +345,8 @@ class Orchestrator:
         if scout_len and len(authors) != scout_len:
             return False
 
+        # If hover/meta produced affiliation numbers that exceed the available affiliation strings,
+        # treat as incomplete (common when meta tags are duplicated/missing on some sites).
         for a in authors:
             if not isinstance(a, dict):
                 return False
@@ -353,7 +355,35 @@ class Orchestrator:
             has_affs = isinstance(affs, list) and any(str(x).strip() for x in affs)
             if not (has_affs or aff):
                 return False
+
+            try:
+                nums = a.get("affiliation_numbers")
+                if isinstance(nums, list) and nums and isinstance(affs, list):
+                    uniq_nums = {int(x) for x in nums if isinstance(x, int) or (isinstance(x, str) and str(x).isdigit())}
+                    uniq_affs = {str(x).strip() for x in affs if str(x).strip()}
+                    # If an author claims 3-4 numbered affiliations but we only have 1-2 strings,
+                    # hover data isn't sufficient to safely skip OCR.
+                    if len(uniq_nums) >= 3 and len(uniq_affs) and len(uniq_affs) < len(uniq_nums):
+                        return False
+            except Exception:
+                # Never fail the pipeline due to heuristic checks.
+                pass
         return True
+
+    def _filter_meta_institutions(self, meta_institutions: Optional[List[str]]) -> Optional[List[str]]:
+        if not isinstance(meta_institutions, list) or not meta_institutions:
+            return None
+        vals = [str(x).strip() for x in meta_institutions if str(x).strip()]
+        if not vals:
+            return None
+        uniq = {v.lower() for v in vals}
+        # Low diversity meta institution lists are often duplicated per-author and miss real entries.
+        # In that case, do not use them to guide OCR mapping.
+        if len(uniq) <= 1:
+            return None
+        if (len(uniq) / max(len(vals), 1)) < 0.45:
+            return None
+        return vals
 
     def _run_perception_state(self, doi: str, scout_data: Dict[str, Any]) -> AgentResult:
         """PERCEPTION: capture screenshot, hover signals, and OCR-based vision data."""
@@ -404,7 +434,7 @@ class Orchestrator:
                     meta = page_author_data.get("meta") or {}
                     mi = meta.get("citation_author_institution")
                     if isinstance(mi, list) and mi:
-                        meta_institutions = mi
+                        meta_institutions = self._filter_meta_institutions(mi)
 
                 # If hover/click already produced complete affiliations for all authors, skip slow OCR.
                 if self._env_truthy("VISION_SKIP_OCR_IF_HOVER_COMPLETE", default="1") and self._hover_has_complete_affiliations(

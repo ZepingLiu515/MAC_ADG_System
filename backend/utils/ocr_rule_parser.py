@@ -374,7 +374,8 @@ class OcrRuleParser:
         t = self.normalize_ws(s)
         stop_re = re.compile(
             r"\b(Received|Accepted|Published|Abstract|Keywords|Citation|Cited By|PDF Downloads|"
-            r"Article Views|Download|Full Text|Tables|Figures|Related|Special Issue|Altmetric)\b",
+            r"Article Views|Download|Full Text|Tables|Figures|Related|Special Issue|Altmetric|"
+            r"See more|View details|Editor\s*(?:&|and)\s*Reviewers|Outline|Downloads|Views)\b",
             re.I,
         )
         cut = stop_re.search(t)

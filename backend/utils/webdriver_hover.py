@@ -125,6 +125,122 @@ def extract_author_hover_data(
         except Exception:
             return False
 
+        def _try_expand_common_sections(page: Any) -> List[str]:
+                """Best-effort: click expand prompts like 'see more' and author-information toggles.
+
+                This improves the chance that author/affiliation details are visible in the DOM for
+                later hover/click extraction. It must be safe: if the UI already shows
+                'Hide Author Information', we avoid clicking it to prevent collapsing.
+                """
+
+                js = r"""
+(() => {
+    const norm = (s) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const isVisible = (el) => {
+        try {
+            if (!el) return false;
+            const style = window.getComputedStyle(el);
+            const rect = el.getBoundingClientRect();
+            return style && style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 2 && rect.height > 2;
+        } catch (e) { return false; }
+    };
+
+    const alreadyOpenMarkers = [
+        'hide author information'
+    ];
+    const authorExpandMarkers = [
+        'author information',
+        'authors and affiliations',
+        'author information & affiliation',
+        'author information & affiliations',
+        'author information and affiliation',
+        'author information and affiliations'
+    ];
+    const moreMarkers = [
+        'see more',
+        'show more',
+        'view more',
+        'read more',
+        'show all',
+        'see all'
+    ];
+
+    const bodyText = norm(document.body ? (document.body.innerText || '') : '');
+    const alreadyOpen = alreadyOpenMarkers.some(m => bodyText.includes(m));
+
+    const candidates = [];
+    const sels = [
+        'button',
+        'a',
+        'summary',
+        '[role="button"]',
+        '[aria-expanded]'
+    ];
+    for (const sel of sels) {
+        try { document.querySelectorAll(sel).forEach(el => candidates.push(el)); } catch (e) {}
+    }
+
+    const scored = [];
+    for (const el of candidates) {
+        if (!isVisible(el)) continue;
+        let txt = '';
+        try { txt = (el.innerText || el.textContent || '').trim(); } catch (e) { txt = ''; }
+        if (!txt) continue;
+        const t = norm(txt);
+
+        // Skip collapsing toggle when already open.
+        if (alreadyOpen && alreadyOpenMarkers.some(m => t.includes(m))) continue;
+
+        const isAuthorExpander = authorExpandMarkers.some(m => t.includes(m));
+        const isMore = moreMarkers.some(m => t === m || t.includes(m));
+        if (!isAuthorExpander && !isMore) continue;
+
+        let score = 0;
+        if (isAuthorExpander) {
+            score += 10;
+            if (/affiliat/.test(t)) score += 4;
+            if (/authors and affiliations/.test(t)) score += 4;
+        }
+        if (isMore) {
+            score += 6;
+        }
+
+        // Prefer elements closer to author/affiliation context.
+        try {
+            const parentText = norm((el.parentElement && (el.parentElement.innerText || '')) || '');
+            if (parentText.includes('author') || parentText.includes('affiliat')) score += 4;
+        } catch (e) {}
+
+        try {
+            const ae = el.getAttribute('aria-expanded');
+            if (ae === 'false') score += 3;
+            if (ae === 'true') score -= 1;
+        } catch (e) {}
+
+        scored.push({ score, el, txt });
+    }
+
+    scored.sort((a, b) => (b.score - a.score));
+
+    const clicked = [];
+    const maxClicks = 3;
+    for (const item of scored) {
+        if (clicked.length >= maxClicks) break;
+        try {
+            item.el.click();
+            clicked.push(item.txt);
+        } catch (e) {}
+    }
+    return clicked;
+})();
+"""
+
+                try:
+                        r = page.evaluate(js)
+                        return r if isinstance(r, list) else []
+                except Exception:
+                        return []
+
     def _collect_visible_popover_text(page: Any) -> str:
         js = r"""
 (() => {
@@ -680,6 +796,14 @@ def extract_author_hover_data(
         handle_selection_page(page)
         close_cookie_popup(page)
         page.wait_for_timeout(800)
+
+        try:
+            clicked = _try_expand_common_sections(page)
+            if clicked:
+                print(f"[WebDriver] Expanded sections: {clicked}")
+                page.wait_for_timeout(800)
+        except Exception:
+            pass
 
         meta_names: List[str] = []
         meta_institutions: List[str] = []
