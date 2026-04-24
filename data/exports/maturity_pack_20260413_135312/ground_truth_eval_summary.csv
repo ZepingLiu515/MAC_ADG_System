@@ -1,0 +1,44 @@
+metric,value,detail
+run_total_dois,20,from run_times.csv
+run_success_dois,20,success=True count
+run_success_rate,1.0,20/20
+mean_elapsed_sec,108.029,from run_config.json stats.mean_elapsed_sec
+p90_elapsed_sec,179.188,from run_config.json stats.p90_elapsed_sec
+structured_author_table_coverage,0.85,17/20 appear in per_paper_summary.csv
+structured_author_table_missing_dois,"10.1007/s00134-023-07050-7; 10.1038/s41587-022-01618-2; 10.1038/s41586-024-07487-w",missing in per_paper_summary.csv
+
+paper_has_scu_TP,10,GT from doi_table.csv; pred=matched_authors>0
+paper_has_scu_FP,0,
+paper_has_scu_TN,10,
+paper_has_scu_FN,0,
+paper_has_scu_accuracy,1.0,
+paper_has_scu_precision,1.0,
+paper_has_scu_recall,1.0,
+paper_has_scu_f1,1.0,
+
+author_name_TP,25,only on GT-positive papers
+author_name_FP,1,
+author_name_FN,4,
+author_name_precision,0.9615,
+author_name_recall,0.8621,
+author_name_f1,0.9091,
+
+author_rank_correct,25,only on TP names with GT ranks
+author_rank_total,25,
+author_rank_accuracy,1.0,
+
+corresponding_TP,4,only on GT-positive papers; pred uses match_signals evidence_sources contains correspondence_marker
+corresponding_FP,0,
+corresponding_TN,4,
+corresponding_FN,2,
+corresponding_precision,1.0,
+corresponding_recall,0.6667,
+corresponding_f1,0.8,
+
+co_first_TP,0,only on GT-positive papers; pred uses match_signals evidence_sources contains co_first_marker/equal_contribution_marker
+co_first_FP,0,
+co_first_TN,7,
+co_first_FN,3,
+co_first_precision,0.0,TP/(TP+FP) treated as 0 when denom=0
+co_first_recall,0.0,
+co_first_f1,0.0,

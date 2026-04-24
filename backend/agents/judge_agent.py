@@ -284,6 +284,7 @@ class JudgeAgent:
             matched_count = 0
             saved_count = 0
             needs_review_count = 0
+            skipped_count = 0
 
             def _name_key(name: str) -> str:
                 if not name:
@@ -412,6 +413,7 @@ class JudgeAgent:
                 confidence = 0.0
                 match_trace: Dict[str, Any] = {}
                 name_only_candidate: Optional[Dict[str, Any]] = None
+                decision: str = ""
 
                 # ✅ 姓名+单位同时一致才可确认目标职工：
                 # - 有教师库：只要作者具备非 Unknown 的单位信息，就进入姓名+单位的模糊匹配；
@@ -450,6 +452,11 @@ class JudgeAgent:
                                 "aff_used": aff_used,
                                 "reason": ("affiliation_unknown" if aff_unknown else "affiliation_mismatch"),
                             }
+
+                            # Strict rule requested:
+                            # - name looks like a faculty member but affiliation is Unknown => NEEDS_REVIEW
+                            # - name looks like a faculty member but affiliation mismatches => SKIPPED
+                            decision = "NEEDS_REVIEW" if aff_unknown else "SKIPPED"
 
                 # 打印
                 if matched_faculty:
@@ -490,6 +497,13 @@ class JudgeAgent:
                                 )
                             )
                         ),
+                        "decision": (
+                            "COMPLETED" if matched_faculty else (
+                                decision if decision else (
+                                    "NEEDS_REVIEW" if hits_school_aff else "NEEDS_REVIEW"
+                                )
+                            )
+                        ),
                         "source": author.get("source"),
                         "evidence_score": evidence_score,
                         "evidence_sources": evidence_sources,
@@ -503,8 +517,14 @@ class JudgeAgent:
                 saved_count += 1
 
                 if matched_faculty is None:
-                    # 无法精确匹配到教师：要么是单位命中但名单缺失/不全，要么是测试模式
-                    needs_review_count += 1
+                    # Strict requested split:
+                    # - name-only + Unknown aff => NEEDS_REVIEW
+                    # - name-only + mismatch aff => SKIPPED (do not count as needs_review)
+                    # Other unmatched-but-school-affiliation-hit cases remain NEEDS_REVIEW.
+                    if name_only_candidate and decision == "SKIPPED":
+                        skipped_count += 1
+                    else:
+                        needs_review_count += 1
             
             # 7️⃣ 更新论文状态
             if saved_count <= 0:
@@ -524,7 +544,19 @@ class JudgeAgent:
             if not faculty_loaded:
                 paper.status = "NEEDS_REVIEW"
             else:
-                paper.status = "NEEDS_REVIEW" if needs_review_count > 0 else "COMPLETED"
+                # Strict rule impact on paper status:
+                # - If we only observed name-only candidates with affiliation mismatch (SKIPPED decisions),
+                #   mark the paper as SKIPPED.
+                # - If any NEEDS_REVIEW candidates exist (Unknown affiliation / school_hit but not matched), mark NEEDS_REVIEW.
+                # - Otherwise COMPLETED.
+                if needs_review_count > 0:
+                    paper.status = "NEEDS_REVIEW"
+                elif matched_count > 0:
+                    paper.status = "COMPLETED"
+                elif skipped_count > 0 and saved_count == skipped_count:
+                    paper.status = "SKIPPED"
+                else:
+                    paper.status = "COMPLETED"
             db.commit()
 
             logger.info(
@@ -536,7 +568,11 @@ class JudgeAgent:
             )
 
             return {
-                "status": "needs_review" if needs_review_count > 0 else "success",
+                "status": (
+                    "needs_review"
+                    if paper.status == "NEEDS_REVIEW"
+                    else ("skipped" if paper.status == "SKIPPED" else "success")
+                ),
                 "doi": doi,
                 "total_authors": len(merged_authors),
                 "saved_authors": saved_count,

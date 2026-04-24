@@ -1,0 +1,6 @@
+﻿doi,gt_has_scu,pred_has_scu,gt_scu_author_count,pred_matched_author_count,total_authors_in_db,gt_corresponding,pred_corresponding,gt_co_first,pred_co_first,missed_names,extra_names
+10.1038/s41551-023-01045-x,Y,N,3,0,6,Y,N,Y,N,Chengdi Wang; Jun Shao; Weimin Li,
+10.1038/s41392-022-01130-8,Y,N,11,0,11,Y,N,Y,N,Chengdi Wang; Jingwei Li; Jun Shao; Li Zhang; Lujia Song; Ningning Chao; Tingting Song; Weimin Li; Ying Yang; Yinyun Ni; Zhoufeng Wang,
+10.1038/s41467-023-42720-6,Y,Y,2,2,10,Y,Y,N,N,,
+10.1038/s41467-024-47121-x,Y,Y,1,1,10,Y,Y,N,N,,
+10.1038/s41467-024-51130-1,Y,Y,1,1,17,Y,Y,N,N,,

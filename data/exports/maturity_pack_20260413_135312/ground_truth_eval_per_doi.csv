@@ -1,0 +1,21 @@
+doi,gt_has_scu,pred_has_scu,gt_scu_author_count,pred_matched_author_count,total_authors_in_db,gt_corresponding,pred_corresponding,gt_co_first,pred_co_first,missed_names,extra_names,notes
+10.1038/s41467-023-40854-1,Y,Y,1,1,4,N,N,N,N,,,
+10.1038/s41551-023-01045-x,Y,Y,3,4,10,Y,Y,Y,N,,Kang Zhang,Possible GT omission if Kang Zhang is SCU
+10.1038/s41467-023-42720-6,Y,Y,2,2,11,Y,N,N,N,,,
+10.1038/s41586-022-05030-3,Y,Y,1,1,10,N,N,N,N,,,
+10.1038/s41392-022-01090-z,Y,Y,1,1,11,N,N,N,N,,,
+10.1109/taffc.2022.3164516,Y,Y,1,1,5,N,N,Y,N,,,
+10.1038/s41467-024-47121-x,Y,Y,1,1,10,Y,Y,N,N,,,
+10.1038/s41392-022-01130-8,Y,Y,11,9,12,Y,N,Y,N,"Jun Shao; Weimin Li",,
+10.1038/s41467-024-51130-1,Y,Y,1,1,17,Y,Y,N,N,,,
+10.1007/s00134-023-07050-7,N,N,0,0,0,,,,,,No paper_authors rows in per_paper_summary
+10.1038/s41586-023-06957-x,N,N,0,0,2,,,,,,,
+10.1038/s41586-023-05769-3,N,N,0,0,9,,,,,,,
+10.1038/s41587-022-01618-2,N,N,0,0,0,,,,,,No paper_authors rows in per_paper_summary
+10.1038/s41586-022-05572-6,N,N,0,0,2,,,,,,,
+10.1038/s41591-023-02327-2,N,N,0,0,8,,,,,,,
+10.1038/s41586-022-05498-z,N,N,0,0,20,,,,,,,
+10.1038/s41467-023-39637-5,N,N,0,0,10,,,,,,,
+10.1038/s41586-024-07487-w,N,N,0,0,0,,,,,,No paper_authors rows in per_paper_summary
+10.1038/s41746-023-00819-6,N,N,0,0,1,,,,,,,
+10.3389/fimmu.2022.863640,Y,Y,7,5,7,Y,Y,N,N,"Hancong Li; Qin Zheng",,

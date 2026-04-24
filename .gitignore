@@ -19,6 +19,10 @@ __pycache__/
 logs/
 *.log
 
+# 数据
+data/
+.streamlit/
+
 .env
 *.env
 .DS_Store

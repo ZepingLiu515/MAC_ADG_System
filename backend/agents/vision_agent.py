@@ -27,6 +27,44 @@ class VisionAgent:
         self.webdriver = WebDriverAdapter()
         self.ocr_rule_parser = OcrRuleParser()
 
+        # Cache OCR engine to avoid re-initializing heavy Paddle models for every page/ROI.
+        # Repeated initialization manifests as many "Creating model: ..." lines and can look like a hang.
+        self._paddle_ocr: Any = None
+        self._paddle_ocr_init_failed: bool = False
+
+    def _get_paddleocr(self) -> Optional[Any]:
+        """Lazily initialize and cache PaddleOCR.
+
+        Returns None if PaddleOCR is not installed or initialization failed.
+        """
+        if self._paddle_ocr is not None:
+            return self._paddle_ocr
+        if self._paddle_ocr_init_failed:
+            return None
+
+        try:
+            # Paddle/PaddleOCR in some version combos can trigger PIR/oneDNN incompatibilities.
+            os.environ.setdefault("FLAGS_enable_pir_api", "0")
+            os.environ.setdefault("FLAGS_enable_pir_in_executor", "0")
+            os.environ.setdefault("FLAGS_use_mkldnn", "0")
+            os.environ.setdefault("FLAGS_use_onednn", "0")
+
+            from paddleocr import PaddleOCR  # type: ignore[import-not-found]
+
+            try:
+                self._paddle_ocr = PaddleOCR(use_textline_orientation=True, lang="ch", show_log=False)
+            except TypeError:
+                # Backward compatibility with older PaddleOCR versions.
+                self._paddle_ocr = PaddleOCR(use_textline_orientation=True, lang="ch")
+            return self._paddle_ocr
+        except ImportError:
+            logger.warning("[Vision] PaddleOCR not installed")
+        except Exception as exc:
+            logger.warning("[Vision] PaddleOCR init error: %s", exc)
+
+        self._paddle_ocr_init_failed = True
+        return None
+
     def _load_bgr_image(self, image_path: str) -> Any:
         """Load image as BGR array when possible; fall back to path string."""
         try:
@@ -390,16 +428,9 @@ class VisionAgent:
         # 方案 1️⃣：优先使用本地 PaddleOCR（最稳定）
         logger.info("[Vision] Running PaddleOCR text extraction")
         try:
-            # Paddle/PaddleOCR 在部分版本组合下会触发 PIR/oneDNN 执行器的不兼容错误。
-            # 默认使用更保守的执行路径，提升稳定性（用户可自行通过环境变量覆盖）。
-            os.environ.setdefault("FLAGS_enable_pir_api", "0")
-            os.environ.setdefault("FLAGS_enable_pir_in_executor", "0")
-            os.environ.setdefault("FLAGS_use_mkldnn", "0")
-            os.environ.setdefault("FLAGS_use_onednn", "0")
-
-            from paddleocr import PaddleOCR  # type: ignore[import-not-found]
-            # 使用新参数名，避免过时警告
-            ocr = PaddleOCR(use_textline_orientation=True, lang='ch')
+            ocr = self._get_paddleocr()
+            if ocr is None:
+                return None
             image_input = self._load_bgr_image(image_path)
             result = ocr.predict(image_input)
 
@@ -431,14 +462,9 @@ class VisionAgent:
         """OCR + BBox 信息（用于 ROI 切片）。失败时返回 (None, [])."""
         logger.info("[Vision] Running OCR+BBox for ROI")
         try:
-            # 保守执行路径，避免 PIR/oneDNN 报错
-            os.environ.setdefault("FLAGS_enable_pir_api", "0")
-            os.environ.setdefault("FLAGS_enable_pir_in_executor", "0")
-            os.environ.setdefault("FLAGS_use_mkldnn", "0")
-            os.environ.setdefault("FLAGS_use_onednn", "0")
-
-            from paddleocr import PaddleOCR  # type: ignore[import-not-found]
-            ocr = PaddleOCR(use_textline_orientation=True, lang='ch')
+            ocr = self._get_paddleocr()
+            if ocr is None:
+                return None, []
             image_input = self._load_bgr_image(image_path)
             result = ocr.ocr(image_input, cls=True)
             text_lines, items = self._normalize_ocr_result(result)

@@ -1,0 +1,4 @@
+﻿metric,scout_only,vision_fused
+affiliation_non_unknown_ratio,(需要运行采样),83.6%
+corresponding_flag_rows,(需要运行采样),5
+co_first_flag_rows,(需要运行采样),2

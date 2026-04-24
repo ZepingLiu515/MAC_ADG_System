@@ -49,7 +49,7 @@ def try_expand_common_sections(page: Any) -> None:
         return false;
     };
 
-    const moreMarkers = ['see more','show more','view more','read more','show all','see all'];
+    const moreMarkers = ['See more','show more','view more','read more','show all','see all','Show authors'];
     const candidates = [];
     const sels = ['button','a','summary','[role="button"]','[aria-expanded]'];
     for (const sel of sels) {

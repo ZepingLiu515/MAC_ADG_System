@@ -1,0 +1,122 @@
+{
+  "last_results": [
+    {
+      "doi": "10.1038/s41586-022-05498-z",
+      "title": "A wearable cardiac ultrasound imager",
+      "journal": "Nature",
+      "status": "SKIPPED",
+      "状态": "⚠️ OCR失败",
+      "视觉解析": "有结果"
+    },
+    {
+      "doi": "10.1038/s41467-023-39637-5",
+      "title": "Revealing the closed pore formation of waste wood-derived hard carbon for advanced sodium-ion battery",
+      "journal": "Nature Communications",
+      "status": "NEEDS_REVIEW",
+      "状态": "📸 网页已截图",
+      "视觉解析": "有结果"
+    },
+    {
+      "doi": "10.1038/s41392-022-01090-z",
+      "title": "ALOX15-launched PUFA-phospholipids peroxidation increases the susceptibility of ferroptosis in ischemia-induced myocardial damage",
+      "journal": "Signal Transduction and Targeted Therapy",
+      "status": "NEEDS_REVIEW",
+      "状态": "⚠️ OCR失败",
+      "视觉解析": "无"
+    },
+    {
+      "doi": "10.1109/taffc.2022.3164516",
+      "title": "Contrastive Learning of Subject-Invariant EEG Representations for Cross-Subject Emotion Recognition",
+      "journal": "IEEE Transactions on Affective Computing",
+      "status": "NEEDS_REVIEW",
+      "状态": "⚠️ OCR失败",
+      "视觉解析": "无"
+    },
+    {
+      "doi": "10.3389/fimmu.2022.863640",
+      "title": "Systemic Immune-Inflammation Index Is Associated With Increased Urinary Albumin Excretion: A Population-Based Study",
+      "journal": "Frontiers in Immunology",
+      "status": "COMPLETED",
+      "状态": "⚠️ OCR失败",
+      "视觉解析": "无"
+    }
+  ],
+  "last_record_doi": "10.3389/fimmu.2022.863640",
+  "agent_logs": [
+    {
+      "agent": "Scout",
+      "message": "完成元数据抓取：10.1038/s41586-022-05498-z",
+      "confidence": 0.9
+    },
+    {
+      "agent": "Vision",
+      "message": "完成 OCR 解析与作者识别",
+      "confidence": 0.85
+    },
+    {
+      "agent": "Judge",
+      "message": "完成裁决：SKIPPED",
+      "confidence": 0.65
+    },
+    {
+      "agent": "Scout",
+      "message": "完成元数据抓取：10.1038/s41467-023-39637-5",
+      "confidence": 0.9
+    },
+    {
+      "agent": "Vision",
+      "message": "完成 OCR 解析与作者识别",
+      "confidence": 0.85
+    },
+    {
+      "agent": "Judge",
+      "message": "完成裁决：NEEDS_REVIEW",
+      "confidence": 0.65
+    },
+    {
+      "agent": "Scout",
+      "message": "完成元数据抓取：10.1038/s41392-022-01090-z",
+      "confidence": 0.9
+    },
+    {
+      "agent": "Vision",
+      "message": "完成 OCR 解析与作者识别",
+      "confidence": 0.55
+    },
+    {
+      "agent": "Judge",
+      "message": "完成裁决：NEEDS_REVIEW",
+      "confidence": 0.65
+    },
+    {
+      "agent": "Scout",
+      "message": "完成元数据抓取：10.1109/taffc.2022.3164516",
+      "confidence": 0.9
+    },
+    {
+      "agent": "Vision",
+      "message": "完成 OCR 解析与作者识别",
+      "confidence": 0.55
+    },
+    {
+      "agent": "Judge",
+      "message": "完成裁决：NEEDS_REVIEW",
+      "confidence": 0.65
+    },
+    {
+      "agent": "Scout",
+      "message": "完成元数据抓取：10.3389/fimmu.2022.863640",
+      "confidence": 0.9
+    },
+    {
+      "agent": "Vision",
+      "message": "完成 OCR 解析与作者识别",
+      "confidence": 0.55
+    },
+    {
+      "agent": "Judge",
+      "message": "完成裁决：COMPLETED",
+      "confidence": 0.9
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+﻿metric,value,detail
+paper_has_scu_TP,1.0,pred=matched_authors>0
+paper_has_scu_FP,0.0,pred=matched_authors>0
+paper_has_scu_TN,0.0,pred=matched_authors>0
+paper_has_scu_FN,4.0,pred=matched_authors>0
+paper_has_scu_accuracy,0.2,
+paper_has_scu_precision,1.0,
+paper_has_scu_recall,0.2,
+paper_has_scu_f1,0.3333,
+author_name_TP,3.0,only on GT-positive papers
+author_name_FP,1.0,only on GT-positive papers
+author_name_FN,15.0,only on GT-positive papers
+author_name_precision,0.75,
+author_name_recall,0.1667,
+author_name_f1,0.2727,
+rank_accuracy,1.0,3/3
+corresponding_precision,1.0,TP=1 FP=0
+corresponding_recall,0.2,TP=1 FN=4
+corresponding_f1,0.3333,
+co_first_recall,0.5,TP=1 FN=1
