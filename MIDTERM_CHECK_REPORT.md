@@ -71,8 +71,7 @@
 - **可交付证据包**：提供脚本自动导出中期检查所需的表格、图表、运行耗时与配置快照（适配“数据导向”的检查口径）。
 
 ### 3.6 实验与指标（数据化快照：来自证据包 run_config.json）
-为体现“数据导向 + 可复现”，系统在 2026-04-13 进行一次 20 DOI 子集的端到端批跑并自动生成证据包，关键统计如下：
-- **证据包目录（可直接引用）**：`data/exports/maturity_pack_20260413_135312/`
+为体现“数据导向 + 可复现”，系统在 2026-04-13 进行一次 20 DOI 子集的端到端批跑，关键统计如下：
 - **审计 sidecar 目录（可直接引用）**：`data/visual_slices/`
 - **样本规模**：DOI=20；教师名录=152。
 - **运行效率**：平均耗时 108.0 s/篇；P90 耗时 179.2 s/篇（run_times 统计）。
@@ -81,20 +80,14 @@
 - **抽取质量（DB 统计）**：单位非 Unknown 比例 100.0%（149/149）；平均作者数 8.76；平均匹配到教师库作者数 1.53。
 
 补充：识别正确率（Ground Truth 一致性评测）
-- **运行成功率**：20/20=100%（见 `data/exports/maturity_pack_20260413_135312/run_times.csv`）。
-- **作者条目覆盖率**：17/20=85%（见 `data/exports/maturity_pack_20260413_135312/per_paper_summary.csv`；缺失 DOI：10.1007/s00134-023-07050-7、10.1038/s41587-022-01618-2、10.1038/s41586-024-07487-w）。
+- **运行成功率**：20/20=100%。
+- **作者条目覆盖率**：17/20=85%（缺失 DOI：10.1007/s00134-023-07050-7、10.1038/s41587-022-01618-2、10.1038/s41586-024-07487-w）。
 - **论文级命中（是否识别到名单川大教师）**：Accuracy=100%（TP=10, FP=0, TN=10, FN=0）。
 - **作者级名单匹配（真值阳性论文）**：Precision=96.15%，Recall=86.21%，F1=90.91%（TP=25, FP=1, FN=4）。
 - **通讯作者标记（真值阳性论文）**：Precision=100%，Recall=66.67%，F1=80%（TP=4, FP=0, FN=2）。
 - **共一标记（真值阳性论文）**：Recall=0%（TP=0, FN=3；作为 Error Case 记录，后续迭代重点攻坚）。
 
-上述评测结果已固化为可截图证据表：
-- `data/exports/maturity_pack_20260413_135312/ground_truth_eval_summary.csv`
-- `data/exports/maturity_pack_20260413_135312/ground_truth_eval_per_doi.csv`
-
 补充：ROI 消融（A/B）结果（同一 5 DOI 子集，tag: 20260413_194120）
-- **ROI 关闭（对照组）证据包**：`data/exports/maturity_pack_ablation_roi0_20260413_194120/`
-- **ROI 开启（实验组）证据包**：`data/exports/maturity_pack_ablation_roi1_20260413_194120/`
 
 关键对比（Ground Truth 一致性评测 + 运行效率）：
 - **论文级命中 Accuracy**：100.00%（5/5）→ 80.00%（4/5）（-20.00pp）
@@ -167,33 +160,6 @@
 ## 附录：附件与证据索引（可直接截图/引用）
 > 使用方式：以下均为项目根目录下**相对路径**。在 VS Code 打开对应文件后即可截图；PNG 可直接插入报告；CSV/JSON 可截图表头与前若干行作为“数据证据”。
 
-### 附件 A：可复现性与运行记录（Run Evidence）
-- **A1 运行配置快照（参数/环境/统计）**：`data/exports/maturity_pack_20260413_135312/run_config.json`
-- **A2 本次批处理 DOI 清单**：`data/exports/maturity_pack_20260413_135312/dois.txt`
-- **A3 逐 DOI 耗时与终态（可做运行稳定性证据）**：`data/exports/maturity_pack_20260413_135312/run_times.csv`
-- **A4 ROI 消融配置快照（ROI 关闭）**：`data/exports/maturity_pack_ablation_roi0_20260413_194120/run_config.json`
-- **A5 ROI 消融配置快照（ROI 开启）**：`data/exports/maturity_pack_ablation_roi1_20260413_194120/run_config.json`
-
-### 附件 B：三组数据表（CSV，可直接引用为表格证据）
-- **B1 论文终态分布表（A1 对应）**：`data/exports/maturity_pack_20260413_135312/status_summary.csv`
-- **B2 每篇论文作者/匹配统计（A2 对应）**：`data/exports/maturity_pack_20260413_135312/per_paper_summary.csv`
-- **B3 身份审计表（C1 对应）**：`data/exports/maturity_pack_20260413_135312/identity_audit.csv`
-- **B4 能力增量对比模板（B1 对应）**：`data/exports/maturity_pack_20260413_135312/capability_increment.csv`
-- **B5 真值一致性评测汇总（正确率/召回率/F1）**：`data/exports/maturity_pack_20260413_135312/ground_truth_eval_summary.csv`
-- **B6 真值一致性评测逐 DOI 对照表**：`data/exports/maturity_pack_20260413_135312/ground_truth_eval_per_doi.csv`
-- **B7 ROI 消融对比结论（A/B，含差异表）**：`data/exports/maturity_pack_ablation_roi1_20260413_194120/roi_ablation_summary.md`
-- **B8 ROI 消融差异表（Δ，CSV）**：`data/exports/maturity_pack_ablation_roi1_20260413_194120/roi_ablation_delta.csv`
-- **B9 ROI 消融真值评测汇总（ROI 关闭）**：`data/exports/maturity_pack_ablation_roi0_20260413_194120/ground_truth_eval_summary.csv`
-- **B10 ROI 消融真值评测汇总（ROI 开启）**：`data/exports/maturity_pack_ablation_roi1_20260413_194120/ground_truth_eval_summary.csv`
-
-### 附件 C：图表证据（PNG，可直接插图）
-- **C1 论文终态分布（对应 B1）**：`data/exports/maturity_pack_20260413_135312/status_distribution.png`
-- **C2 每篇论文匹配作者条目数分布（对应 B2）**：`data/exports/maturity_pack_20260413_135312/matched_authors_hist.png`
-
-![C1 论文终态分布](data/exports/maturity_pack_20260413_135312/status_distribution.png)
-
-![C2 匹配作者条目数分布](data/exports/maturity_pack_20260413_135312/matched_authors_hist.png)
-
 ### 附件 D：页面级 sidecar 审计（代表性 DOI 示例，可截图“原始证据链”）
 > 命名规则：将 DOI 中的 `/` 替换为 `_` 作为文件前缀（safe_doi）。
 
@@ -209,5 +175,4 @@
   - hover/面板结构化数据：`data/visual_slices/10.3389_fimmu.2022.863640_page_author_data.json`
 
 ### 附件 E：引用模板（可直接复制到中期检查正文）
-- **证据包引用**：本次实验的可复现证据包位于 `data/exports/maturity_pack_20260413_135312/`，包含运行配置（A1）、逐 DOI 运行耗时（A3）、三组数据表（B1–B4）与图表（C1–C2）。
 - **原始证据链引用**：代表性 DOI 的“截图—ROI—hover—OCR”证据链见 `data/visual_slices/`（示例 D1、D2）。

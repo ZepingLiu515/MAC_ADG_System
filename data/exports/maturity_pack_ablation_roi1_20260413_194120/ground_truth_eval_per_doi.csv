@@ -1,6 +1,0 @@
-﻿doi,gt_has_scu,pred_has_scu,gt_scu_author_count,pred_matched_author_count,total_authors_in_db,gt_corresponding,pred_corresponding,gt_co_first,pred_co_first,missed_names,extra_names
-10.1038/s41551-023-01045-x,Y,Y,3,4,10,Y,Y,Y,Y,,Kang Zhang
-10.1038/s41392-022-01130-8,Y,Y,11,9,12,Y,Y,Y,Y,Jun Shao; Weimin Li,
-10.1038/s41467-023-42720-6,Y,N,2,0,9,Y,N,N,N,Cheng Gu; Shengdong Wang,
-10.1038/s41467-024-47121-x,Y,Y,1,1,9,Y,N,N,N,,
-10.1038/s41467-024-51130-1,Y,Y,1,1,15,Y,Y,N,N,,
